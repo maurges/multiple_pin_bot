@@ -6,6 +6,8 @@ from enum import Enum
 
 # Description: proxy class to a means of storage. For now i'm using python
 # dict, but this should be replaced with something persistant very soon
+# The Storage class stores different kinds of objects, but each is indexed with
+# chat id
 
 
 # structure with essential message data
@@ -108,41 +110,57 @@ class MessageInfo:
 
 
 class Storage:
-    _data  : Dict[int, List[MessageInfo]]
-    _edits : Dict[int, int]
+    # pinned messages
+    _pin_data  : Dict[int, List[MessageInfo]]
+    # msg_id of the bot's message with pins
+    _editables : Dict[int, int]
+    # whether someone wrote something to chat after bot's pin
+    # key exists if nobody wrote
+    _no_chat_messages_added : Dict[int, Tuple]
 
     def __init__(self) -> None:
-        self._data  = {}
-        self._edits = {}
+        self._pin_data  = {}
+        self._editables = {}
+        self._no_chat_messages_added = {}
 
     def get(self, chat_id : int) -> List[MessageInfo]:
-        return self._data[chat_id]
+        return self._pin_data[chat_id]
 
     def add(self, chat_id : int, msg : MessageInfo) -> None:
-        if chat_id not in self._data:
-            self._data[chat_id] = [msg]
+        if chat_id not in self._pin_data:
+            self._pin_data[chat_id] = [msg]
         else:
-            self._data[chat_id] += [msg]
+            self._pin_data[chat_id] += [msg]
+        self._no_chat_messages_added[chat_id] = ()
 
     def clear(self, chat_id : int) -> None:
-        if chat_id in self._data:
-            del self._data[chat_id]
+        if chat_id in self._pin_data:
+            del self._pin_data[chat_id]
 
     def clear_keep_last(self, chat_id : int) -> None:
-        if chat_id in self._data:
+        if chat_id in self._pin_data:
             # latest messages are pushed to the back, so we just delete
             # everything but very last message
-            self._data[chat_id] = self._data[chat_id][-1:]
+            self._pin_data[chat_id] = self._pin_data[chat_id][-1:]
 
     def remove(self, chat_id : int, m_id : int) -> None:
-        if chat_id not in self._data:
+        if chat_id not in self._pin_data:
             return
-        old = self._data[chat_id]
+        old = self._pin_data[chat_id]
         new = filter(lambda x: x.m_id != m_id, old)
-        self._data[chat_id] = list(new)
+        self._pin_data[chat_id] = list(new)
 
     # get and set id of message that you need to edit
     def get_message_id(self, chat_id : int) -> int:
-        return self._edits[chat_id]
+        return self._editables[chat_id]
     def set_message_id(self, chat_id : int, m_id : int) -> None:
-        self._edits[chat_id] = m_id
+        self._editables[chat_id] = m_id
+    def has_message_id(self, chat_id : int) -> bool:
+        return chat_id in self._editables
+
+    # status of last message
+    def did_user_message(self, chat_id : int) -> bool:
+        return chat_id not in self._no_chat_messages_added
+    def user_message_added(self, chat_id : int) -> None:
+        if chat_id in self._no_chat_messages_added:
+            del self._no_chat_messages_added[chat_id]
