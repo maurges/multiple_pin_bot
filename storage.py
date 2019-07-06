@@ -131,7 +131,6 @@ class Storage:
             self._pin_data[chat_id] = [msg]
         else:
             self._pin_data[chat_id] += [msg]
-        self._no_chat_messages_added[chat_id] = ()
 
     def clear(self, chat_id : int) -> None:
         if chat_id in self._pin_data:
@@ -155,6 +154,7 @@ class Storage:
         return self._editables[chat_id]
     def set_message_id(self, chat_id : int, m_id : int) -> None:
         self._editables[chat_id] = m_id
+        self._no_chat_messages_added[chat_id] = ()
     def has_message_id(self, chat_id : int) -> bool:
         return chat_id in self._editables
 
