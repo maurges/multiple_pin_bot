@@ -35,24 +35,38 @@ def pinned(storage : Storage, bot, update):
     msg_info = MessageInfo(update.message.pinned_message)
 
     storage.add(chat_id, msg_info)
-
     text, layout = gen_post(storage, chat_id)
-    sent_msg = bot.send_message(chat_id, text=text, reply_markup=layout)
-    sent_id = sent_msg.message_id
 
-    # remember the message for future edits
-    storage.set_message_id(chat_id, sent_id)
-    bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
+    new_message = storage.did_user_message(chat_id) 
+    no_editable = not storage.has_message_id(chat_id)
+    if new_message or no_editable:
+        # There recently was a user message, or there is no bot's pinned
+        # message to edit. We need to send a new one
+        sent_msg = bot.send_message(chat_id, text=text, reply_markup=layout)
+        sent_id = sent_msg.message_id
+        # remember the message for future edits
+        storage.set_message_id(chat_id, sent_id)
+        bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
+    else:
+        msg_id = storage.get_message_id(chat_id)
+        bot.edit_message_text(
+            chat_id       = chat_id
+            ,message_id   = msg_id
+            ,text         = text
+            ,reply_markup = layout
+            )
+        # also repin bot's message
+        bot.pin_chat_message(chat_id, msg_id, disable_notification=True)
 
 @curry
 def button_pressed(storage : Storage, bot, update):
     cb = update.callback_query
     chat_id = cb.message.chat_id
 
-    if cb.data == CallbackData.UnpinAll:
+    if cb.data == UnpinAll:
         storage.clear(chat_id)
         cb.answer("")
-    elif cb.data == CallbackData.KeepLast:
+    elif cb.data == KeepLast:
         storage.clear_keep_last(chat_id)
         cb.answer("")
     else:
@@ -64,16 +78,16 @@ def button_pressed(storage : Storage, bot, update):
     msg_id = storage.get_message_id(chat_id)
 
     bot.edit_message_text(
-        chat_id       = chat_id# + (1 << 64) if chat_id < 0 else chat_id
+        chat_id       = chat_id
         ,message_id   = msg_id
         ,text         = text
         ,reply_markup = layout
         )
 
 
-class CallbackData(Enum):
-    UnpinAll = "$$ALL"
-    KeepLast = "$$LAST"
+# button actions in callback data
+UnpinAll = "$$ALL"
+KeepLast = "$$LAST"
 
 # used in two handlers above
 def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
@@ -83,9 +97,9 @@ def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarku
 
     # generate buttons for pin control
     button_all = InlineKeyboardButton("Unpin all"
-                                     ,callback_data=str(CallbackData.UnpinAll))
+                                     ,callback_data=UnpinAll)
     button_keep_last = InlineKeyboardButton("Keep last"
-                                     ,callback_data=str(CallbackData.KeepLast))
+                                     ,callback_data=KeepLast)
     # first two rows: those buttons
     layout = [[button_all], [button_keep_last]]
 
@@ -100,7 +114,7 @@ def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarku
     buttons = [InlineKeyboardButton(text, callback_data=str(data))
                 for text, data in zip(texts, cb_datas)]
     # split buttons by lines
-    on_one_line = 3
+    on_one_line = 5
     rows = [buttons[i:i+on_one_line] for i in range(0, len(buttons), on_one_line)]
 
     layout += rows
