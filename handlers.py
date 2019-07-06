@@ -84,6 +84,12 @@ def button_pressed(storage : Storage, bot, update):
         ,reply_markup = layout
         )
 
+@curry
+def message(storage : Storage, bot, update):
+    if update.message and update.message.chat_id:
+        chat_id = update.message.chat_id
+        storage.user_message_added(chat_id)
+
 
 # button actions in callback data
 UnpinAll = "$$ALL"
