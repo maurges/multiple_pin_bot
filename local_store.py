@@ -3,6 +3,7 @@
 from typing import *
 from datetime import datetime
 from enum import IntEnum
+from cgi import escape
 
 """
 Author: d86leader@mail.com, 2019
@@ -67,10 +68,9 @@ class MessageInfoType:
     def gen_preview(kind : Kind, msg) -> str:
         max_length = 50
 
-        if kind == MessageInfoType.Kind.Text:
+        if msg.text:
             return msg.text[:max_length]
         else:
-            # does any other kind have meaningful preview?
             return ""
 
     @staticmethod
@@ -101,12 +101,13 @@ class MessageInfoType:
     def __str__(self) -> str:
         lines : List[str] = []
 
-        # first line: icon and sender
-        lines += [f"{self.icon} {self.sender}"]
+        # first line: icon, sender and date
+        time_str = self.date.strftime("%A, %d %B %Y")
+        lines += [f"{self.icon} {escape(self.sender)}, {time_str}"]
 
         # second line: preview
         if len(self.preview) > 0:
-            lines += [self.preview]
+            lines += [f"<i>> {escape(self.preview)}</i>"]
 
         # third line: link to post
         lines += [self.link]

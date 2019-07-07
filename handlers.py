@@ -50,7 +50,9 @@ def pinned(storage : Storage, bot, update):
     if new_message or no_editable:
         # There recently was a user message, or there is no bot's pinned
         # message to edit. We need to send a new one
-        sent_msg = bot.send_message(chat_id, text=text, reply_markup=layout)
+        sent_msg = bot.send_message(chat_id, text=text
+                                   ,parse_mode="HTML"
+                                   ,reply_markup=layout)
         sent_id = sent_msg.message_id
         # remember the message for future edits
         storage.set_message_id(chat_id, sent_id)
@@ -61,6 +63,7 @@ def pinned(storage : Storage, bot, update):
             chat_id       = chat_id
             ,message_id   = msg_id
             ,text         = text
+            ,parse_mode   = "HTML"
             ,reply_markup = layout
             )
         # also repin bot's message
@@ -89,6 +92,7 @@ def button_pressed(storage : Storage, bot, update):
         chat_id       = chat_id
         ,message_id   = msg_id
         ,text         = text
+        ,parse_mode   = "HTML"
         ,reply_markup = layout
         )
 
@@ -112,7 +116,6 @@ def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarku
 
     pins = storage.get(chat_id)
     text = "\n\n".join(map(str, pins))
-    text += "\n\nUnpin:"
 
     # generate buttons for pin control
     button_all = InlineKeyboardButton("Unpin all"
