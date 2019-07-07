@@ -2,7 +2,7 @@
 
 from typing import *
 from datetime import datetime
-from enum import Enum
+from enum import IntEnum
 
 # Description: proxy class to a means of storage. For now i'm using python
 # dict, but this should be replaced with something persistant very soon
@@ -13,7 +13,7 @@ from enum import Enum
 # structure with essential message data
 # and methods for generating it from tg message
 class MessageInfo:
-    class Kind(Enum):
+    class Kind(IntEnum):
         Default = 0
         Text  = 1
         Photo = 2
@@ -156,6 +156,7 @@ class Storage:
         return self._editables[chat_id]
     def set_message_id(self, chat_id : int, m_id : int) -> None:
         self._editables[chat_id] = m_id
+        # automatically set that no user has messaged us
         self._no_chat_messages_added[chat_id] = ()
     def has_message_id(self, chat_id : int) -> bool:
         return chat_id in self._editables
