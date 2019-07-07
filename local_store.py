@@ -70,6 +70,8 @@ class MessageInfoType:
 
         if msg.text:
             return msg.text[:max_length]
+        elif msg.caption:
+            return msg.caption[:max_length]
         else:
             return ""
 
@@ -107,7 +109,7 @@ class MessageInfoType:
 
         # second line: preview
         if len(self.preview) > 0:
-            lines += [f"<i>> {escape(self.preview)}</i>"]
+            lines += [f"<i>{escape(self.preview)}</i>"]
 
         # third line: link to post
         lines += [self.link]
