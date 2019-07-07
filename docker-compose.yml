@@ -3,5 +3,4 @@ services:
   tgbot:
     build: .
   redis:
-    ports:
     image: "redis:5.0.5"
