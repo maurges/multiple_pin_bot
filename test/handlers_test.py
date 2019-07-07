@@ -76,7 +76,7 @@ class Bot:
         self.pinned = []
         self.edited = []
 
-    def send_message(self, chat_id, text, reply_markup):
+    def send_message(self, chat_id, text, parse_mode, reply_markup):
         self.sent += [{'chat_id' : chat_id
                       ,'text'    : text
                       ,'markup'  : reply_markup
@@ -86,7 +86,7 @@ class Bot:
         self.pinned += [{'chat_id' : chat_id
                         ,'m_id'    : m_id
                         }]
-    def edit_message_text(self, chat_id, message_id, text, reply_markup):
+    def edit_message_text(self, chat_id, message_id, text, parse_mode, reply_markup):
         self.edited += [{'chat_id' : chat_id
                         ,'msg_id'  : message_id
                         ,'text'    : text
