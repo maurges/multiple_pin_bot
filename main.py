@@ -11,6 +11,7 @@ bot.
 
 import logging
 import handlers
+import sys
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 from telegram.ext import MessageHandler, Filters
 from remote_store import Storage
@@ -21,6 +22,9 @@ def main(token : str) -> None:
     dp = updater.dispatcher
 
     storage = Storage()
+    if len(sys.argv) > 1 and sys.argv[1] == "local":
+        from local_store import Storage as LocalStorage
+        storage = LocalStorage()
 
     # catch messages pinned
     pin_filter = Filters.status_update.pinned_message
