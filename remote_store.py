@@ -6,9 +6,14 @@ from datetime import datetime
 import local_store
 import json
 
-# Description: proxy types to the means of storage.
-# This presents the same interface as local_store, but uses the remote redis
-# server for storing data
+"""
+Author: d86leader@mail.com, 2019
+License: published under GNU GPL-3
+
+Description: proxy types to the means of storage.
+This presents the same interface as local_store, but uses the remote redis
+server for storing data
+"""
 
 
 class MessageInfoType(local_store.MessageInfoType):

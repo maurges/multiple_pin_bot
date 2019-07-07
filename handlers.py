@@ -5,6 +5,13 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from local_store import Storage
 from enum import Enum
 
+"""
+Author: d86leader@mail.com, 2019
+License: published under GNU GPL-3
+
+Description: main handlers for telegram
+"""
+
 
 # decorator: curry first positional argument of function
 def curry(func):

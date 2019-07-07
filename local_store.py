@@ -4,10 +4,15 @@ from typing import *
 from datetime import datetime
 from enum import IntEnum
 
-# Description: proxy class to a means of storage. For now i'm using python
-# dict, but this should be replaced with something persistant very soon
-# The Storage class stores different kinds of objects, but each is indexed with
-# chat id
+"""
+Author: d86leader@mail.com, 2019
+License: published under GNU GPL-3
+
+Description: proxy class to a means of storage. For now i'm using python
+dict, but this should be replaced with something persistant very soon
+The Storage class stores different kinds of objects, but each is indexed with
+chat id
+"""
 
 
 # structure with essential message data
