@@ -34,6 +34,7 @@ def pinned(storage : Storage, bot, update):
     chat_id = update.message.chat_id
     msg_info = MessageInfo(update.message.pinned_message)
 
+    # add pinned message for this chat
     storage.add(chat_id, msg_info)
     text, layout = gen_post(storage, chat_id)
 
@@ -97,6 +98,11 @@ KeepLast = "$$LAST"
 
 # used in two handlers above
 def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
+    if not storage.has(chat_id):
+        text = "No pins"
+        layout = InlineKeyboardMarkup([[]])
+        return (text, layout)
+
     pins = storage.get(chat_id)
     text = "\n\n".join(map(str, pins))
     text += "\n\nUnpin:"
@@ -115,9 +121,9 @@ def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarku
         #return f"{index} {msg.icon} {msg.sender}"
 
     texts = (on_button(msg, index + 1) for msg,index in zip(pins, range(len(pins))))
-    cb_datas = (msg.m_id for msg in pins)
+    cb_datas = (str(msg.m_id) for msg in pins)
 
-    buttons = [InlineKeyboardButton(text, callback_data=str(data))
+    buttons = [InlineKeyboardButton(text, callback_data=data)
                 for text, data in zip(texts, cb_datas)]
     # split buttons by lines
     on_one_line = 5

@@ -123,6 +123,8 @@ class Storage:
         self._editables = {}
         self._no_chat_messages_added = {}
 
+    def has(self, chat_id : int) -> bool:
+        return chat_id in self._pin_data
     def get(self, chat_id : int) -> List[MessageInfo]:
         return self._pin_data[chat_id]
 
