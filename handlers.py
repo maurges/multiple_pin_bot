@@ -2,7 +2,7 @@
 
 from typing import *
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from storage import Storage, MessageInfo
+from local_store import Storage, MessageInfo
 from enum import Enum
 
 

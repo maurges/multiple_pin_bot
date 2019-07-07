@@ -11,7 +11,7 @@ from typing import *
 from random import randint
 from telegram import Message
 from datetime import datetime, timedelta
-from storage import Storage
+from local_store import Storage
 from copy import copy
 
 
