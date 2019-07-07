@@ -1,0 +1,8 @@
+version: '3'
+services:
+  tgbot:
+    build: .
+  redis:
+    ports:
+      - "6379:6379"
+    image: "redis:5.0.5"

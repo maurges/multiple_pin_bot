@@ -13,7 +13,7 @@ import logging
 import handlers
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler
 from telegram.ext import MessageHandler, Filters
-from local_store import Storage
+from remote_store import Storage
 
 
 def main(token : str) -> None:
