@@ -2,7 +2,7 @@
 
 from typing import *
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from local_store import Storage, MessageInfo
+from local_store import Storage
 from enum import Enum
 
 
@@ -32,7 +32,7 @@ def pinned(storage : Storage, bot, update):
         return
 
     chat_id = update.message.chat_id
-    msg_info = MessageInfo(update.message.pinned_message)
+    msg_info = storage.MessageInfo(update.message.pinned_message)
 
     # add pinned message for this chat
     storage.add(chat_id, msg_info)

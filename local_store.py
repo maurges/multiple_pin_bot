@@ -12,7 +12,7 @@ from enum import IntEnum
 
 # structure with essential message data
 # and methods for generating it from tg message
-class MessageInfo:
+class MessageInfoType:
     class Kind(IntEnum):
         Default = 0
         Text  = 1
@@ -48,21 +48,21 @@ class MessageInfo:
     @staticmethod
     def gen_kind(msg) -> Kind:
         if msg.photo and len(msg.photo) > 0:
-            return MessageInfo.Kind.Photo
+            return MessageInfoType.Kind.Photo
         elif msg.document:
-            return MessageInfo.Kind.File
+            return MessageInfoType.Kind.File
         elif msg.sticker:
-            return MessageInfo.Kind.Sticker
+            return MessageInfoType.Kind.Sticker
         elif msg.text and len(msg.text) > 0:
-            return MessageInfo.Kind.Text
+            return MessageInfoType.Kind.Text
         else:
-            return MessageInfo.Kind.Default
+            return MessageInfoType.Kind.Default
 
     @staticmethod
     def gen_preview(kind : Kind, msg) -> str:
         max_length = 50
 
-        if kind == MessageInfo.Kind.Text:
+        if kind == MessageInfoType.Kind.Text:
             return msg.text[:max_length]
         else:
             # does any other kind have meaningful preview?
@@ -70,13 +70,13 @@ class MessageInfo:
 
     @staticmethod
     def gen_icon(kind : Kind) -> str:
-        if kind == MessageInfo.Kind.Text:
+        if kind == MessageInfoType.Kind.Text:
             return "📌"
-        elif kind == MessageInfo.Kind.Photo:
+        elif kind == MessageInfoType.Kind.Photo:
             return "🖼"
-        elif kind == MessageInfo.Kind.File:
+        elif kind == MessageInfoType.Kind.File:
             return "📎"
-        elif kind == MessageInfo.Kind.Sticker:
+        elif kind == MessageInfoType.Kind.Sticker:
             return "😀"
         else:
             return "📌"
@@ -110,8 +110,10 @@ class MessageInfo:
 
 
 class Storage:
+    MessageInfo = MessageInfoType
+
     # pinned messages
-    _pin_data  : Dict[int, List[MessageInfo]]
+    _pin_data  : Dict[int, List[MessageInfoType]]
     # msg_id of the bot's message with pins
     _editables : Dict[int, int]
     # whether someone wrote something to chat after bot's pin
@@ -125,10 +127,10 @@ class Storage:
 
     def has(self, chat_id : int) -> bool:
         return chat_id in self._pin_data
-    def get(self, chat_id : int) -> List[MessageInfo]:
+    def get(self, chat_id : int) -> List[MessageInfoType]:
         return self._pin_data[chat_id]
 
-    def add(self, chat_id : int, msg : MessageInfo) -> None:
+    def add(self, chat_id : int, msg : MessageInfoType) -> None:
         if chat_id not in self._pin_data:
             self._pin_data[chat_id] = [msg]
         else:
