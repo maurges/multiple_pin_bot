@@ -23,10 +23,19 @@ def curry(func):
 
 
 def start(bot, update):
-    update.message.reply_text("Start")
+    update.message.reply_text("Hi!")
 
 def help(bot, update):
-    update.message.reply_text("Don't panic!")
+    help_msg = """
+Just pin a message and it will be added to the pinned list.
+You can then remove a message just by pressing a button.
+
+If something doesn't work, make sure the bot is administrator and has the right to pin messages.
+If something doesn't work still, see https://github.com/d86leader/multiple_pin_bot/issues for help or questions.
+
+I'm a bot, see my github in the link above. If you want to use this bot in your group, please set up your own copy. I'm currently running on {platform}.
+    """.format(platform="Cavium ThunderX 88XX")
+    update.message.reply_text(help_msg)
 
 @curry
 def error(logger, bot, update, whatisthisparam):
