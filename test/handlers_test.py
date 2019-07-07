@@ -172,3 +172,25 @@ class TestHandlers(unittest.TestCase):
         unpin_all_upd = Update(None, unpin_all_cb)
         button_handler(bot, unpin_all_upd)
         self.assertFalse(chat_id in storage._pin_data)
+
+    def test_keep_last(self):
+        storage = Storage()
+        bot = Bot()
+        pin_handler = handlers.pinned(storage)
+        button_handler = handlers.button_pressed(storage)
+
+        message_amount = 5
+        msgs = gen_same_chat_messages(message_amount)
+        upds = [Update(msg, None) for msg in msgs]
+        chat_id = msgs[0].chat.id
+
+        for update, amount in zip(upds, range(1, message_amount + 1)):
+            pin_handler(bot, update)
+            self.assertEqual(len(storage._pin_data[chat_id]), amount)
+
+        keep_last_cb = Update.CbQuery(msgs[0], handlers.KeepLast)
+        keep_last_upd = Update(None, keep_last_cb)
+        button_handler(bot, keep_last_upd)
+
+        self.assertTrue(chat_id in storage._pin_data)
+        self.assertEqual(len(storage._pin_data[chat_id]), 1)
