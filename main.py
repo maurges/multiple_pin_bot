@@ -25,6 +25,11 @@ def main(token : str) -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "local":
         from local_store import Storage as LocalStorage
         storage = LocalStorage()
+        print("Running with local storage")
+
+    # mundane handlers
+    dp.add_handler(CommandHandler("start", handlers.start))
+    dp.add_handler(CommandHandler("help", handlers.help))
 
     # catch messages pinned
     pin_filter = Filters.status_update.pinned_message
@@ -34,10 +39,6 @@ def main(token : str) -> None:
     # catch any user message
     msg_filter = ~Filters.status_update
     dp.add_handler(MessageHandler(msg_filter, handlers.message(storage)))
-
-    # mundane handlers
-    dp.add_handler(CommandHandler("start", handlers.start))
-    dp.add_handler(CommandHandler("help", handlers.help))
 
     # Enable logging
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
