@@ -90,7 +90,7 @@ class Storage:
         key = str(chat_id)
         redis.ltrim(key, 0, 0)
 
-    def remove(self, chat_id : int, m_id : int, hint=0 : int) -> None:
+    def remove(self, chat_id : int, m_id : int, hint : int = 0) -> None:
         redis = self._pins_db
         key = str(chat_id)
         dumps = redis.lrange(key, 0, -1)
