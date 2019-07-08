@@ -3,7 +3,7 @@
 from typing import *
 from datetime import datetime
 from enum import IntEnum
-from cgi import escape
+from view import gen_preview
 
 """
 Author: d86leader@mail.com, 2019
@@ -41,8 +41,8 @@ class MessageInfoType:
 
         self.kind = self.gen_kind(msg)
         self.link = self.gen_link(msg)
-        self.icon    = self.gen_icon(self.kind)
-        self.preview = self.gen_preview(self.kind, msg)
+        self.icon = self.gen_icon(self.kind)
+        self.preview = gen_preview(msg)
         self.date = msg.date
 
         # generate sender info
@@ -65,30 +65,6 @@ class MessageInfoType:
             return MessageInfoType.Kind.Default
 
     @staticmethod
-    def gen_preview(kind : Kind, msg) -> str:
-        max_length = 280
-
-        if msg.text:
-            return msg.text[:max_length]
-        elif msg.caption:
-            return msg.caption[:max_length]
-        else:
-            return ""
-
-    @staticmethod
-    def gen_icon(kind : Kind) -> str:
-        if kind == MessageInfoType.Kind.Text:
-            return "📌"
-        elif kind == MessageInfoType.Kind.Photo:
-            return "🖼"
-        elif kind == MessageInfoType.Kind.File:
-            return "📎"
-        elif kind == MessageInfoType.Kind.Sticker:
-            return "😀"
-        else:
-            return "📌"
-
-    @staticmethod
     def gen_link(msg) -> str:
         chat_id = msg.chat_id
         # this api adapter uses strage int representation. Citation:
@@ -103,24 +79,20 @@ class MessageInfoType:
             if chat_s[0:3] == "100":
                 chat_s = chat_s[3:]
                 chat_id = int(chat_s)
-
         return f"https://t.me/c/{chat_id}/{msg.message_id}"
 
-    def __str__(self) -> str:
-        lines : List[str] = []
-
-        # first line: preview
-        if len(self.preview) > 0:
-            lines += [f"<i>{escape(self.preview)}</i>"]
-
-        # second line: icon, sender and date
-        time_str = self.date.strftime("%A, %d %B %Y")
-        lines += [f"{self.icon} {escape(self.sender)}, {time_str}"]
-
-        # third line: link to post
-        lines += [f'<a href="{self.link}">Go to message</a>']
-
-        return "\n".join(lines)
+    @staticmethod
+    def gen_icon(kind : Kind) -> str:
+        if kind == MessageInfoType.Kind.Text:
+            return "📌"
+        elif kind == MessageInfoType.Kind.Photo:
+            return "🖼"
+        elif kind == MessageInfoType.Kind.File:
+            return "📎"
+        elif kind == MessageInfoType.Kind.Sticker:
+            return "😀"
+        else:
+            return "📌"
 
 
 class Storage:

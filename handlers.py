@@ -4,6 +4,8 @@ from typing import *
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from local_store import Storage
 from enum import Enum
+from control import UnpinAll, KeepLast, parse_unpin_data
+import view
 
 """
 Author: d86leader@mail.com, 2019
@@ -96,7 +98,7 @@ def button_pressed(storage : Storage, bot, update):
         storage.clear_keep_last(chat_id)
         cb.answer("")
     else:
-        msg_id, msg_index = map(int, cb.data.split(':'))
+        msg_id, msg_index = parse_unpin_data(cb.data)
         storage.remove(chat_id, msg_id, msg_index)
         cb.answer("")
 
@@ -118,51 +120,9 @@ def message(storage : Storage, bot, update):
         storage.user_message_added(chat_id)
 
 
-# button actions in callback data
-UnpinAll = "$$ALL"
-KeepLast = "$$LAST"
-
-# used in two handlers above
-def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
+def gen_post(storage, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
     if not storage.has(chat_id):
-        text = "No pins"
-        layout = InlineKeyboardMarkup([[]])
-        return (text, layout)
-
-    pins = storage.get(chat_id)
-    text = "\n\n".join(map(str, pins))
-
-    # generate buttons for pin control
-    button_all = InlineKeyboardButton("Unpin all"
-                                     ,callback_data=UnpinAll)
-    button_keep_last = InlineKeyboardButton("Keep last"
-                                     ,callback_data=KeepLast)
-
-    # special button case when only one pin:
-    if len(pins) == 1:
-        layout = [[button_all]]
-        return (text, InlineKeyboardMarkup(layout))
-
-    # first two rows: those buttons
-    layout = [[button_all], [button_keep_last]]
-
-    # other buttons: this style with message_id as data
-    def on_button(msg, index) -> str:
-        return f"{index + 1} {msg.icon}"
-    def cb_data(msg, index) -> str:
-        return f"{str(msg.m_id)}:{index}"
-
-    it1 = zip(pins, range(len(pins)))
-    it2 = zip(pins, range(len(pins)))
-    texts = (on_button(msg, index) for msg, index in it1)
-    cb_datas = (cb_data(msg, index) for msg, index in it2)
-
-    buttons = [InlineKeyboardButton(text, callback_data=data)
-                for text, data in zip(texts, cb_datas)]
-    # split buttons by lines
-    on_one_line = 5
-    rows = [buttons[i:i+on_one_line] for i in range(0, len(buttons), on_one_line)]
-
-    layout += rows
-
-    return (text, InlineKeyboardMarkup(layout))
+        return view.empty_post()
+    else:
+        pins = storage.get(chat_id)
+        return view.pins_post(pins, chat_id)
