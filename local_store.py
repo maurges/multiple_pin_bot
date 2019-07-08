@@ -91,12 +91,18 @@ class MessageInfoType:
     @staticmethod
     def gen_link(msg) -> str:
         chat_id = msg.chat_id
-        # this api adapter uses incorrect long int representation,
-        # so bit numbers can be negative, which telegram doesn't recognise when
-        # we send back
-        # So knowing numbers are 64 bit, we add
+        # this api adapter uses strage int representation. Citation:
+        # botapi prefixes:
+        # + for pms
+        # - for small group chats
+        # -100 for channels and megagroups
+        # we need to make a positive out of this
         if chat_id < 0:
-            chat_id += (1 << 64)
+            chat_id = -chat_id
+            chat_s = str(chat_id)
+            if chat_s[0:3] == "100":
+                chat_s = chat_s[3:]
+                chat_id = int(chat_s)
 
         return f"https://t.me/c/{chat_id}/{msg.message_id}"
 
