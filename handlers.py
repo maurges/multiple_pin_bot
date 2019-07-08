@@ -131,6 +131,12 @@ def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarku
                                      ,callback_data=UnpinAll)
     button_keep_last = InlineKeyboardButton("Keep last"
                                      ,callback_data=KeepLast)
+
+    # special button case when only one pin:
+    if len(pins) == 1:
+        layout = [[button_all]]
+        return (text, InlineKeyboardMarkup(layout))
+
     # first two rows: those buttons
     layout = [[button_all], [button_keep_last]]
 
