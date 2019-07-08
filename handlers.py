@@ -90,7 +90,7 @@ def button_pressed(storage : Storage, bot, update):
         storage.clear_keep_last(chat_id)
         cb.answer("")
     else:
-        msg_id = int(cb.data)
+        msg_id, msg_index = map(int, cb.data.split(':'))
         storage.remove(chat_id, msg_id)
         cb.answer("")
 
@@ -142,11 +142,14 @@ def gen_post(storage : Storage, chat_id : int) -> Tuple[str, InlineKeyboardMarku
 
     # other buttons: this style with message_id as data
     def on_button(msg, index) -> str:
-        return f"{index} {msg.icon}"
-        #return f"{index} {msg.icon} {msg.sender}"
+        return f"{index + 1} {msg.icon}"
+    def cb_data(msg, index) -> str:
+        return f"{str(msg.m_id)}:{index}"
 
-    texts = (on_button(msg, index + 1) for msg,index in zip(pins, range(len(pins))))
-    cb_datas = (str(msg.m_id) for msg in pins)
+    it1 = zip(pins, range(len(pins)))
+    it2 = zip(pins, range(len(pins)))
+    texts = (on_button(msg, index) for msg, index in it1)
+    cb_datas = (cb_data(msg, index) for msg, index in it2)
 
     buttons = [InlineKeyboardButton(text, callback_data=data)
                 for text, data in zip(texts, cb_datas)]
