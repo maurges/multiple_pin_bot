@@ -2,7 +2,7 @@
 
 from typing import *
 from html import escape
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Message, InlineKeyboardMarkup, InlineKeyboardButton
 import control
 
 """
@@ -13,7 +13,7 @@ Description: functions to present data in chat
 """
 
 
-def gen_preview(msg) -> str:
+def gen_preview(msg : Message) -> str:
     max_length = 280
 
     if msg.text:
