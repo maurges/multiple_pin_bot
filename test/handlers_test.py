@@ -51,7 +51,7 @@ def gen_same_chat_messages(amount : int) -> List[Message]:
     return msgs
 
 def gen_unpin_data(msg : Message) -> 'Update.CbQuery':
-    data = str(msg.message_id)
+    data = str(msg.message_id) + ":0"
     return Update.CbQuery(msg, data)
 
 
