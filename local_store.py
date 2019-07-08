@@ -66,7 +66,7 @@ class MessageInfoType:
 
     @staticmethod
     def gen_preview(kind : Kind, msg) -> str:
-        max_length = 50
+        max_length = 280
 
         if msg.text:
             return msg.text[:max_length]
@@ -103,16 +103,16 @@ class MessageInfoType:
     def __str__(self) -> str:
         lines : List[str] = []
 
-        # first line: icon, sender and date
-        time_str = self.date.strftime("%A, %d %B %Y")
-        lines += [f"{self.icon} {escape(self.sender)}, {time_str}"]
-
-        # second line: preview
+        # first line: preview
         if len(self.preview) > 0:
             lines += [f"<i>{escape(self.preview)}</i>"]
 
+        # second line: icon, sender and date
+        time_str = self.date.strftime("%A, %d %B %Y")
+        lines += [f"{self.icon} {escape(self.sender)}, {time_str}"]
+
         # third line: link to post
-        lines += [self.link]
+        lines += [f'<a href="{self.link}">Go to message</a>']
 
         return "\n".join(lines)
 
