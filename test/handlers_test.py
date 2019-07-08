@@ -75,6 +75,7 @@ class Bot:
         self.sent = []
         self.pinned = []
         self.edited = []
+        self.deleted = []
 
     def send_message(self, chat_id, text, parse_mode, reply_markup):
         self.sent += [{'chat_id' : chat_id
@@ -92,6 +93,10 @@ class Bot:
                         ,'text'    : text
                         ,'markup'  : reply_markup
                         }]
+    def delete_message(self, chat_id, message_id):
+        self.deleted += [{'chat_id' : chat_id
+                         ,'msg_id'  : message_id
+                         }]
 
 
 """
