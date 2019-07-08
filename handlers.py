@@ -91,7 +91,7 @@ def button_pressed(storage : Storage, bot, update):
         cb.answer("")
     else:
         msg_id, msg_index = map(int, cb.data.split(':'))
-        storage.remove(chat_id, msg_id)
+        storage.remove(chat_id, msg_id, msg_index)
         cb.answer("")
 
     text, layout = gen_post(storage, chat_id)

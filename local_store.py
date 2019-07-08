@@ -160,12 +160,21 @@ class Storage:
             # everything but very last message
             self._pin_data[chat_id] = self._pin_data[chat_id][:1]
 
-    def remove(self, chat_id : int, m_id : int) -> None:
+    def remove(self, chat_id : int, m_id : int, hint : int = 0) -> None:
         if chat_id not in self._pin_data:
             return
-        old = self._pin_data[chat_id]
-        new = filter(lambda x: x.m_id != m_id, old)
-        self._pin_data[chat_id] = list(new)
+
+        pins = self._pin_data[chat_id]
+        # calculate indicies to drop
+        all_bad = [(abs(index - hint), index)
+                      for msg, index in zip(pins, range(len(pins)))
+                      if msg.m_id == m_id
+                  ]
+        if all_bad == []:
+            return
+
+        to_delete = min(all_bad)[1]
+        del pins[to_delete]
 
     # get and set id of message that you need to edit
     def get_message_id(self, chat_id : int) -> int:

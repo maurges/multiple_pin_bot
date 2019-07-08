@@ -90,19 +90,23 @@ class Storage:
         key = str(chat_id)
         redis.ltrim(key, 0, 0)
 
-    def remove(self, chat_id : int, m_id : int) -> None:
+    def remove(self, chat_id : int, m_id : int, hint=0 : int) -> None:
         redis = self._pins_db
         key = str(chat_id)
         dumps = redis.lrange(key, 0, -1)
 
         # calculate indicies to drop
-        to_delete = (index for dump, index in zip(dumps, range(len(dumps)))
-                           if json.loads(dump)['m_id'] == m_id
-                    )
+        all_bad = [(abs(index - hint), index)
+                      for dump, index in zip(dumps, range(len(dumps)))
+                      if json.loads(dump)['m_id'] == m_id
+                  ]
+        if all_bad == []:
+            return
+
+        to_delete = min(all_bad)[1]
         # set the indicies to special value
         special = "$$DELETED"
-        for index in to_delete:
-            redis.lset(key, index, special)
+        redis.lset(key, to_delete, special)
         # delete the special value
         redis.lrem(key, 0, special)
 
