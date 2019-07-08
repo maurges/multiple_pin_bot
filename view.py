@@ -29,11 +29,11 @@ def single_pin(msg_info) -> str:
 
     # first line: preview
     if len(msg_info.preview) > 0:
-        lines += [f"<i>{escape(msg_info.preview)}</i>"]
+        lines += [f"{escape(msg_info.preview)}"]
 
     # second line: icon, sender and date
     time_str = msg_info.date.strftime("%A, %d %B %Y")
-    lines += [f"{msg_info.icon} {escape(msg_info.sender)}, {time_str}"]
+    lines += [f"{msg_info.icon} <i>{escape(msg_info.sender)}, {time_str}</i>"]
 
     # third line: link to post
     lines += [f'<a href="{msg_info.link}">Go to message</a>']
