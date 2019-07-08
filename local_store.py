@@ -148,7 +148,7 @@ class Storage:
         if chat_id not in self._pin_data:
             self._pin_data[chat_id] = [msg]
         else:
-            self._pin_data[chat_id] += [msg]
+            self._pin_data[chat_id].insert(0, msg)
 
     def clear(self, chat_id : int) -> None:
         if chat_id in self._pin_data:
@@ -158,7 +158,7 @@ class Storage:
         if chat_id in self._pin_data:
             # latest messages are pushed to the back, so we just delete
             # everything but very last message
-            self._pin_data[chat_id] = self._pin_data[chat_id][-1:]
+            self._pin_data[chat_id] = self._pin_data[chat_id][:1]
 
     def remove(self, chat_id : int, m_id : int) -> None:
         if chat_id not in self._pin_data:

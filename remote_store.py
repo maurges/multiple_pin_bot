@@ -78,7 +78,7 @@ class Storage:
         redis = self._pins_db
         key = str(chat_id)
         value = msg.dumps()
-        redis.rpush(key, value)
+        redis.lpush(key, value)
 
     def clear(self, chat_id : int) -> None:
         redis = self._pins_db
@@ -88,7 +88,7 @@ class Storage:
     def clear_keep_last(self, chat_id : int) -> None:
         redis = self._pins_db
         key = str(chat_id)
-        redis.ltrim(key, -1, -1)
+        redis.ltrim(key, 0, 0)
 
     def remove(self, chat_id : int, m_id : int) -> None:
         redis = self._pins_db
