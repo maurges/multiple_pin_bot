@@ -55,14 +55,20 @@ def pinned(storage : Storage, bot, update):
     text, layout = gen_post(storage, chat_id)
 
     new_message = storage.did_user_message(chat_id) 
-    no_editable = not storage.has_message_id(chat_id)
-    if new_message or no_editable:
+    has_editable = storage.has_message_id(chat_id)
+    if new_message or not has_editable:
         # There recently was a user message, or there is no bot's pinned
         # message to edit. We need to send a new one
         sent_msg = bot.send_message(chat_id, text=text
                                    ,parse_mode="HTML"
                                    ,reply_markup=layout)
         sent_id = sent_msg.message_id
+
+        # delete old pin message
+        if has_editable:
+            old_msg = storage.get_message_id(chat_id)
+            bot.delete_message(chat_id, old_msg)
+
         # remember the message for future edits
         storage.set_message_id(chat_id, sent_id)
         bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
