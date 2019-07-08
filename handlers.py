@@ -38,8 +38,8 @@ I'm a bot, see my github in the link above. If you want to use this bot in your 
     update.message.reply_text(help_msg)
 
 @curry
-def error(logger, bot, update, whatisthisparam):
-    logger.warning(f"Update '{update}' caused error: {context.error}")
+def error(logger, bot, update, err):
+    logger.warning(f"Update '{update}' caused error: {err}")
 
 
 @curry
