@@ -56,7 +56,7 @@ def pinned(storage : Storage, bot, update):
     storage.add(chat_id, msg_info)
     text, layout = gen_post(storage, chat_id)
 
-    new_message = storage.did_user_message(chat_id) 
+    new_message = storage.did_user_message(chat_id)
     has_editable = storage.has_message_id(chat_id)
     if new_message or not has_editable:
         # There recently was a user message, or there is no bot's pinned

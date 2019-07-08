@@ -48,7 +48,7 @@ def empty_post() -> Tuple[str, InlineKeyboardMarkup]:
 
 # used in two handlers above
 def pins_post(pins, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
-    text = "\n\n".join(map(str, pins))
+    text = "\n\n".join(map(single_pin, pins))
 
     # generate buttons for pin control
     button_all = InlineKeyboardButton("Unpin all"
@@ -64,11 +64,10 @@ def pins_post(pins, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
     # first two rows: those buttons
     layout = [[button_all], [button_keep_last]]
 
-    # other buttons: this style with message_id as data
+    # other buttons: this style with special data
     def on_button(msg, index) -> str:
         return f"{index + 1} {msg.icon}"
-    def cb_data(msg, index) -> str:
-        return f"{str(msg.m_id)}:{index}"
+    cb_data = control.unpin_message_data
 
     it1 = zip(pins, range(len(pins)))
     it2 = zip(pins, range(len(pins)))
