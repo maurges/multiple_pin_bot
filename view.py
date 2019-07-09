@@ -98,9 +98,26 @@ def pins_post(pins, chat_id : int
                 for text, data in zip(texts, cb_datas)]
 
     # split buttons by lines
-    on_one_line = 5
+    on_one_line = best_split(len(buttons))
     rows = [buttons[i:i+on_one_line] for i in range(0, len(buttons), on_one_line)]
 
     layout += rows
 
     return (text, InlineKeyboardMarkup(layout))
+
+# choose the best way to split buttons between lines
+def best_split(amount : int) -> int:
+    best_per_line = 5
+    if amount < best_per_line:
+        return amount
+    #
+    # select which has the most buttons on the last row
+    candidates = list(range(best_per_line, 1, -1))
+    def test_for(amount, candidate):
+        if amount % candidate == 0:
+            return (candidate, candidate)
+        else:
+            return (amount % candidate, candidate)
+    tests = (test_for(amount, cand) for cand in candidates)
+    option = max(tests)[1]
+    return option
