@@ -82,6 +82,7 @@ class Bot:
                       ,'text'    : text
                       ,'markup'  : reply_markup
                       }]
+        assert isinstance(text, str)
         return gen_message()
     def pin_chat_message(self, chat_id, m_id, disable_notification):
         self.pinned += [{'chat_id' : chat_id
@@ -93,6 +94,7 @@ class Bot:
                         ,'text'    : text
                         ,'markup'  : reply_markup
                         }]
+        assert isinstance(text, str)
     def delete_message(self, chat_id, message_id):
         self.deleted += [{'chat_id' : chat_id
                          ,'msg_id'  : message_id
