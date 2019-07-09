@@ -117,7 +117,7 @@ class Storage:
         self._no_chat_messages_added = {}
 
     def has(self, chat_id : int) -> bool:
-        return chat_id in self._pin_data
+        return chat_id in self._pin_data and self._pin_data[chat_id] != []
     def get(self, chat_id : int) -> List[MessageInfoType]:
         return self._pin_data[chat_id]
 
