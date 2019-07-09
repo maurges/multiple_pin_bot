@@ -14,7 +14,21 @@ Description: functions to present data in chat
 """
 
 
-def gen_preview(msg : Message) -> str:
+# a wrapper class: the wrapped string is html-escaped
+class Escaped:
+    wrapped : str
+    def __init__(self, s : str) -> None:
+        self.wrapped = escape(s)
+    @staticmethod
+    def from_escaped(s : str) -> 'Escaped':
+        self = Escaped("")
+        self.wrapped = s
+        return self
+    def __str__(self):
+        return self.wrapped
+
+
+def gen_preview(msg : Message) -> Escaped:
     max_length = 280
 
     if msg.entities != [] and has_links_in(msg.entities):
@@ -22,31 +36,32 @@ def gen_preview(msg : Message) -> str:
     elif msg.caption_entities != [] and has_links_in(msg.caption_entities):
         return gather_links(msg.caption_entities, msg.caption)
     elif msg.text:
-        return escape(msg.text[:max_length])
+        return Escaped(msg.text[:max_length])
     elif msg.caption:
-        return escape(msg.caption[:max_length])
+        return Escaped(msg.caption[:max_length])
     else:
-        return ""
+        return Escaped("")
 
 def is_link(entity):
     return entity.type == "url" or entity.type == "text_link"
 def has_links_in(entities) -> bool:
     return any(map(is_link, entities))
-def link_text(entity, all_text : str) -> str:
-    start : int = entity.offset
+def link_text(entity, all_text : str) -> Escaped:
+    start : int = entity.offset - 1
     end : int = start + entity.length
-    return all_text[start : end]
-def make_link(href : str, body : str) -> str:
-    return f'<a href="{escape(href)}">{escape(body)}</a>'
+    return Escaped(all_text[start : end])
+def make_link(href : Escaped, body : Escaped) -> Escaped:
+    return Escaped.from_escaped(f'<a href="{href}">{body}</a>')
 
-def gather_links(entities, text : str) -> str:
-    lines : List[str] = []
+def gather_links(entities, text : str) -> Escaped:
+    lines : List[Escaped] = []
     for ent in entities:
         if ent.url:
             # manual says this only works for "text_link", but i say if it has
             # url, that must be a correct url
             body = link_text(ent, text)
-            lines.append(make_link(ent.url, body))
+            url = Escaped(ent.url)
+            lines.append(make_link(url, body))
         elif is_link(ent):
             # it's a text_link or url, but doesn't have an own url. Extract one
             # from text body
@@ -54,7 +69,9 @@ def gather_links(entities, text : str) -> str:
             lines.append(make_link(href, href))
         else:
             continue
-    return "\n".join(lines)
+    # unwrap lines, join them and wrap again
+    lines_str = map(str, lines)
+    return Escaped.from_escaped("\n".join(lines_str))
 
 
 
@@ -62,12 +79,12 @@ def single_pin(msg_info) -> str:
     lines : List[str] = []
 
     # first line: preview
-    if len(msg_info.preview) > 0:
-        lines += [f"{msg_info.preview}"]
+    if len(msg_info.preview.wrapped) > 0:
+        lines += [f"{msg_info.preview.wrapped}"]
 
     # second line: icon, sender and date
     time_str = msg_info.date.strftime("%A, %d %B %Y")
-    lines += [f"{msg_info.icon} <i>{escape(msg_info.sender)}, {time_str}</i>"]
+    lines += [f"{msg_info.icon} <i>{escape(msg_info.sender.wrapped)}, {time_str}</i>"]
 
     # third line: link to post
     lines += [f'<a href="{msg_info.link}">Go to message</a>']

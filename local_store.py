@@ -3,7 +3,7 @@
 from typing import *
 from datetime import datetime
 from enum import IntEnum
-from view import gen_preview, has_links_in
+from view import gen_preview, has_links_in, Escaped
 
 """
 Author: d86leader@mail.com, 2019
@@ -32,9 +32,9 @@ class MessageInfoType:
     m_id    : int
     kind    : Kind
     link    : str
-    sender  : str
-    icon    : str
-    preview : str
+    sender  : Escaped
+    icon    : Escaped
+    preview : Escaped
     date    : datetime
 
     def __init__(self, msg) -> None:
@@ -47,9 +47,10 @@ class MessageInfoType:
         self.date = msg.date
 
         # generate sender info
-        self.sender = msg.from_user.first_name
+        sender = msg.from_user.first_name
         if msg.from_user.last_name:
-            self.sender += " " + msg.from_user.last_name
+            sender += " " + msg.from_user.last_name
+        self.sender = Escaped(sender)
 
 
     @staticmethod
