@@ -106,6 +106,7 @@ def button_pressed(storage : Storage, bot, update):
     else:
         msg_id, msg_index = parse_unpin_data(cb.data)
         storage.remove(chat_id, msg_id, msg_index)
+        response_buttons = ButtonsStatus.Expanded
 
     text, layout = gen_post(storage, chat_id, response_buttons)
     msg_id = storage.get_message_id(chat_id)
