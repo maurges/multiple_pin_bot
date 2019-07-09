@@ -163,6 +163,8 @@ class Storage:
         self._no_chat_messages_added[chat_id] = ()
     def has_message_id(self, chat_id : int) -> bool:
         return chat_id in self._editables
+    def remove_message_id(self, chat_id : int) -> None:
+        del self._editables[chat_id]
 
     # status of last message
     def did_user_message(self, chat_id : int) -> bool:

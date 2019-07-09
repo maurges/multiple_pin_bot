@@ -96,6 +96,14 @@ def button_pressed(storage : Storage, bot, update):
     cb.answer("")
     chat_id = cb.message.chat_id
 
+    # race check: do nothing if message already destroyed
+    # FIXME it would be quite nice to have a mutex here btw
+    # but if the race happens, it's no biggie: failing with error is the same
+    # as doing nothing
+    if not storage.has_message_id(chat_id):
+        return
+    msg_id = storage.get_message_id(chat_id)
+
     # default status of response buttons. May be changed in handling below
     response_buttons = ButtonsStatus.Collapsed
     if cb.data == UnpinAll:
@@ -107,15 +115,15 @@ def button_pressed(storage : Storage, bot, update):
     elif cb.data == ButtonsCollapse:
         response_buttons = ButtonsStatus.Collapsed
     else:
-        msg_id, msg_index = parse_unpin_data(cb.data)
-        storage.remove(chat_id, msg_id, msg_index)
+        to_unpin_id, msg_index = parse_unpin_data(cb.data)
+        storage.remove(chat_id, to_unpin_id, msg_index)
         response_buttons = ButtonsStatus.Expanded
 
     text, layout = gen_post(storage, chat_id, response_buttons)
-    msg_id = storage.get_message_id(chat_id)
     if (text, layout) == view.EmptyPost:
         bot.unpin_chat_message(chat_id, msg_id)
         bot.delete_message(chat_id, msg_id)
+        storage.remove_message_id(chat_id)
         return
 
     bot.edit_message_text(

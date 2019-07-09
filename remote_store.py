@@ -127,6 +127,10 @@ class Storage:
         redis = self._editables_db
         key = str(chat_id)
         return redis.get(key) is not None
+    def remove_message_id(self, chat_id : int) -> None:
+        redis = self._editables_db
+        key = str(chat_id)
+        redis.delete(key)
 
     # status of last message
     def did_user_message(self, chat_id : int) -> bool:
