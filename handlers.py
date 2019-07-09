@@ -4,7 +4,9 @@ from typing import *
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from local_store import Storage
 from enum import Enum
-from control import UnpinAll, KeepLast, parse_unpin_data
+from control import parse_unpin_data
+from control import UnpinAll, KeepLast, ButtonsExpand, ButtonsCollapse
+from view import ButtonsStatus
 import view
 
 """
@@ -91,20 +93,24 @@ def button_pressed(storage : Storage, bot, update):
     cb = update.callback_query
     chat_id = cb.message.chat_id
 
+    # default status of response buttons. May be changed in handling below
+    response_buttons = ButtonsStatus.Collapsed
     if cb.data == UnpinAll:
         storage.clear(chat_id)
-        cb.answer("")
     elif cb.data == KeepLast:
         storage.clear_keep_last(chat_id)
-        cb.answer("")
+    elif cb.data == ButtonsExpand:
+        response_buttons = ButtonsStatus.Expanded
+    elif cb.data == ButtonsCollapse:
+        response_buttons = ButtonsStatus.Collapsed
     else:
         msg_id, msg_index = parse_unpin_data(cb.data)
         storage.remove(chat_id, msg_id, msg_index)
-        cb.answer("")
 
-    text, layout = gen_post(storage, chat_id)
+    text, layout = gen_post(storage, chat_id, response_buttons)
     msg_id = storage.get_message_id(chat_id)
 
+    cb.answer("")
     bot.edit_message_text(
         chat_id       = chat_id
         ,message_id   = msg_id
@@ -120,9 +126,11 @@ def message(storage : Storage, bot, update):
         storage.user_message_added(chat_id)
 
 
-def gen_post(storage, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
+def gen_post(storage, chat_id : int
+            ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
+            ) -> Tuple[str, InlineKeyboardMarkup]:
     if not storage.has(chat_id):
         return view.empty_post()
     else:
         pins = storage.get(chat_id)
-        return view.pins_post(pins, chat_id)
+        return view.pins_post(pins, chat_id, button_status)

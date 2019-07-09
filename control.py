@@ -13,6 +13,8 @@ Description: generate and parse data in buttons
 # button actions in callback data
 UnpinAll = "$$ALL"
 KeepLast = "$$LAST"
+ButtonsExpand = "$$EXPAND"
+ButtonsCollapse = "$$COLLAPSE"
 
 def unpin_message_data(msg : Message, index : int) -> str:
     return f"{str(msg.m_id)}:{index}"

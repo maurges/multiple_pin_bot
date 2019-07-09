@@ -3,6 +3,7 @@
 from typing import *
 from html import escape
 from telegram import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from enum import Enum
 import control
 
 """
@@ -46,23 +47,42 @@ def empty_post() -> Tuple[str, InlineKeyboardMarkup]:
     layout = InlineKeyboardMarkup([[]])
     return (text, layout)
 
+
+# how the buttons to edit pins should look
+class ButtonsStatus(Enum):
+    Collapsed = 1
+    Expanded = 2
+
 # used in two handlers above
-def pins_post(pins, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
+def pins_post(pins, chat_id : int
+             ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
+             ) -> Tuple[str, InlineKeyboardMarkup]:
     text = "\n\n".join(map(single_pin, pins))
 
     # generate buttons for pin control
-    button_all = InlineKeyboardButton("Unpin all"
-                                     ,callback_data=control.UnpinAll)
-    button_keep_last = InlineKeyboardButton("Keep last"
-                                     ,callback_data=control.KeepLast)
+    button_all = InlineKeyboardButton(
+        "❌ Unpin all", callback_data=control.UnpinAll)
+    button_keep_last = InlineKeyboardButton(
+        "🔺 Keep last", callback_data=control.KeepLast)
+    button_expand = InlineKeyboardButton(
+        "Edit ➕", callback_data=control.ButtonsExpand)
+    button_collapse = InlineKeyboardButton(
+        "Close ➖", callback_data=control.ButtonsCollapse)
 
     # special button case when only one pin:
     if len(pins) == 1:
         layout = [[button_all]]
         return (text, InlineKeyboardMarkup(layout))
 
+    # when buttons are set to not shown
+    if button_status == ButtonsStatus.Collapsed:
+        layout = [[button_keep_last, button_expand]]
+        return (text, InlineKeyboardMarkup(layout))
+
+    # generate all expanded buttons
+
     # first two rows: those buttons
-    layout = [[button_all], [button_keep_last]]
+    layout = [[button_all, button_collapse]]
 
     # other buttons: this style with special data
     def on_button(msg, index) -> str:
@@ -76,6 +96,7 @@ def pins_post(pins, chat_id : int) -> Tuple[str, InlineKeyboardMarkup]:
 
     buttons = [InlineKeyboardButton(text, callback_data=data)
                 for text, data in zip(texts, cb_datas)]
+
     # split buttons by lines
     on_one_line = 5
     rows = [buttons[i:i+on_one_line] for i in range(0, len(buttons), on_one_line)]
