@@ -17,12 +17,45 @@ Description: functions to present data in chat
 def gen_preview(msg : Message) -> str:
     max_length = 280
 
-    if msg.text:
-        return msg.text[:max_length]
+    if msg.entities != [] and has_links_in(msg.entities):
+        return gather_links(msg.entities, msg.text)
+    elif msg.caption_entities != [] and has_links_in(msg.caption_entities):
+        return gather_links(msg.caption_entities, msg.caption)
+    elif msg.text:
+        return escape(msg.text[:max_length])
     elif msg.caption:
-        return msg.caption[:max_length]
+        return escape(msg.caption[:max_length])
     else:
         return ""
+
+def is_link(entity):
+    return entity.type == "url" or entity.type == "text_link"
+def has_links_in(entities) -> bool:
+    return any(map(is_link, entities))
+def link_text(entity, all_text : str) -> str:
+    start : int = entity.offset
+    end : int = start + entity.length
+    return all_text[start : end]
+def make_link(href : str, body : str) -> str:
+    return f'<a href="{escape(href)}">{escape(body)}</a>'
+
+def gather_links(entities, text : str) -> str:
+    lines : List[str] = []
+    for ent in entities:
+        if ent.url:
+            # manual says this only works for "text_link", but i say if it has
+            # url, that must be a correct url
+            body = link_text(ent, text)
+            lines.append(make_link(ent.url, body))
+        elif is_link(ent):
+            # it's a text_link or url, but doesn't have an own url. Extract one
+            # from text body
+            href = link_text(ent, text)
+            lines.append(make_link(href, href))
+        else:
+            continue
+    return "\n".join(lines)
+
 
 
 def single_pin(msg_info) -> str:
@@ -30,7 +63,7 @@ def single_pin(msg_info) -> str:
 
     # first line: preview
     if len(msg_info.preview) > 0:
-        lines += [f"{escape(msg_info.preview)}"]
+        lines += [f"{msg_info.preview}"]
 
     # second line: icon, sender and date
     time_str = msg_info.date.strftime("%A, %d %B %Y")

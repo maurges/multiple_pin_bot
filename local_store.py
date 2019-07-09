@@ -3,7 +3,7 @@
 from typing import *
 from datetime import datetime
 from enum import IntEnum
-from view import gen_preview
+from view import gen_preview, has_links_in
 
 """
 Author: d86leader@mail.com, 2019
@@ -27,6 +27,7 @@ class MessageInfoType:
         # current api doesn't support polls
         # Poll  = 4
         Sticker = 5
+        Link  = 6
 
     m_id    : int
     kind    : Kind
@@ -59,6 +60,8 @@ class MessageInfoType:
             return MessageInfoType.Kind.File
         elif msg.sticker:
             return MessageInfoType.Kind.Sticker
+        elif has_links_in(msg.entities):
+            return MessageInfoType.Kind.Link
         elif msg.text and len(msg.text) > 0:
             return MessageInfoType.Kind.Text
         else:
@@ -91,6 +94,8 @@ class MessageInfoType:
             return "📎"
         elif kind == MessageInfoType.Kind.Sticker:
             return "😀"
+        elif kind == MessageInfoType.Kind.Link:
+            return "🔗"
         else:
             return "📌"
 
