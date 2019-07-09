@@ -78,17 +78,26 @@ class Bot:
         self.deleted = []
 
     def send_message(self, chat_id, text, parse_mode, reply_markup):
+        msg = gen_message()
         self.sent += [{'chat_id' : chat_id
                       ,'text'    : text
                       ,'markup'  : reply_markup
+                      ,'m_id'    : msg.message_id
                       }]
         assert isinstance(text, str)
-        return gen_message()
+        return msg
+    def unpin_chat_message(self, chat_id, m_id):
+        self.pinned.remove({'chat_id' : chat_id
+                           ,'m_id'    : m_id
+                           })
     def pin_chat_message(self, chat_id, m_id, disable_notification):
+        assert disable_notification == True
         self.pinned += [{'chat_id' : chat_id
                         ,'m_id'    : m_id
                         }]
     def edit_message_text(self, chat_id, message_id, text, parse_mode, reply_markup):
+        # assert that editing existing message
+        assert list(filter(lambda m: m["m_id"] == message_id, self.sent)) != []
         self.edited += [{'chat_id' : chat_id
                         ,'msg_id'  : message_id
                         ,'text'    : text
@@ -96,6 +105,8 @@ class Bot:
                         }]
         assert isinstance(text, str)
     def delete_message(self, chat_id, message_id):
+        # assert that editing existing message
+        assert list(filter(lambda m: m["m_id"] == message_id, self.sent)) != []
         self.deleted += [{'chat_id' : chat_id
                          ,'msg_id'  : message_id
                          }]
