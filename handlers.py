@@ -50,6 +50,8 @@ def error(logger, bot, update, err):
 def pinned(storage : Storage, bot, update):
     if update.message.from_user.is_bot:
         return
+    if pin_from_self(storage, update):
+        return
 
     chat_id = update.message.chat_id
     msg_info = storage.MessageInfo(update.message.pinned_message)
@@ -135,3 +137,16 @@ def gen_post(storage, chat_id : int
     else:
         pins = storage.get(chat_id)
         return view.pins_post(pins, chat_id, button_status)
+
+
+def pin_from_self(storage, update) -> bool:
+    msg = update.message.pinned_message
+    chat_id = msg.chat_id
+
+    if not storage.has_message_id(chat_id):
+        return False
+    old_msg_id = storage.get_message_id(chat_id)
+    if old_msg_id == msg.message_id:
+        return True
+
+    return False
