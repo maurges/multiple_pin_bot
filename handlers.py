@@ -93,6 +93,7 @@ def pinned(storage : Storage, bot, update):
 @curry
 def button_pressed(storage : Storage, bot, update):
     cb = update.callback_query
+    cb.answer("")
     chat_id = cb.message.chat_id
 
     # default status of response buttons. May be changed in handling below
@@ -112,8 +113,11 @@ def button_pressed(storage : Storage, bot, update):
 
     text, layout = gen_post(storage, chat_id, response_buttons)
     msg_id = storage.get_message_id(chat_id)
+    if (text, layout) == view.EmptyPost:
+        bot.unpin_chat_message(chat_id, msg_id)
+        bot.delete_message(chat_id, msg_id)
+        return
 
-    cb.answer("")
     bot.edit_message_text(
         chat_id       = chat_id
         ,message_id   = msg_id
@@ -133,7 +137,7 @@ def gen_post(storage, chat_id : int
             ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
             ) -> Tuple[str, InlineKeyboardMarkup]:
     if not storage.has(chat_id):
-        return view.empty_post()
+        return view.EmptyPost
     else:
         pins = storage.get(chat_id)
         return view.pins_post(pins, chat_id, button_status)

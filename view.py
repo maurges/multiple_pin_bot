@@ -92,10 +92,9 @@ def single_pin(msg_info) -> str:
     return "\n".join(lines)
 
 
-def empty_post() -> Tuple[str, InlineKeyboardMarkup]:
-    text = "No pins"
-    layout = InlineKeyboardMarkup([[]])
-    return (text, layout)
+EmptyPost : Tuple[str, InlineKeyboardMarkup] =(
+    "No pins", InlineKeyboardMarkup([[]])
+)
 
 
 # how the buttons to edit pins should look
