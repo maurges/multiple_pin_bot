@@ -3,6 +3,7 @@
 from typing import *
 from redis import Redis
 from datetime import datetime
+from local_store import Escaped
 import local_store
 import json
 
@@ -28,9 +29,9 @@ class MessageInfoType(local_store.MessageInfoType):
              'm_id'    : self.m_id
             ,'kind'    : int(self.kind)
             ,'link'    : self.link
-            ,'sender'  : self.sender
+            ,'sender'  : self.sender.wrapped
             ,'icon'    : self.icon
-            ,'preview' : self.preview
+            ,'preview' : self.preview.wrapped
             ,'date'    : int(self.date.timestamp())
             }
         return json.dumps(self_dict)
@@ -43,9 +44,9 @@ class MessageInfoType(local_store.MessageInfoType):
         self.m_id = dict['m_id']
         self.kind    = MessageInfoType.Kind(dict['kind'])
         self.link    = dict['link']
-        self.sender  = dict['sender']
+        self.sender  = Escaped.from_escaped(dict['sender'])
         self.icon    = dict['icon']
-        self.preview = dict['preview']
+        self.preview = Escaped.from_escaped(dict['preview'])
         self.date    = datetime.utcfromtimestamp(dict['date'])
 
         return self

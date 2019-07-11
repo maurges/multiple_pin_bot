@@ -33,7 +33,7 @@ class MessageInfoType:
     kind    : Kind
     link    : str
     sender  : Escaped
-    icon    : Escaped
+    icon    : str
     preview : Escaped
     date    : datetime
 
