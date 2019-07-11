@@ -110,6 +110,9 @@ class Storage:
         # delete the special value
         redis.lrem(key, 0, special)
 
+    def replace_same_id(self, chat_id : int, msg : MessageInfoType) -> None:
+        pass
+
 
     # get and set id of message that you need to edit
     def get_message_id(self, chat_id : int) -> int:

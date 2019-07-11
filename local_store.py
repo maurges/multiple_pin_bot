@@ -154,6 +154,9 @@ class Storage:
         to_delete = min(all_bad)[1]
         del pins[to_delete]
 
+    def replace_same_id(self, chat_id : int, msg : MessageInfoType) -> None:
+        pass
+
     # get and set id of message that you need to edit
     def get_message_id(self, chat_id : int) -> int:
         return self._editables[chat_id]

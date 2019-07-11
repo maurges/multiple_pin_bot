@@ -58,37 +58,16 @@ def pinned(storage : Storage, bot, update):
 
     # add pinned message for this chat
     storage.add(chat_id, msg_info)
-    text, layout = gen_post(storage, chat_id)
+    # send or update the bot's pinned message
+    send_message(storage, bot, chat_id)
 
-    new_message = storage.did_user_message(chat_id)
-    has_editable = storage.has_message_id(chat_id)
-    if new_message or not has_editable:
-        # There recently was a user message, or there is no bot's pinned
-        # message to edit. We need to send a new one
-        sent_msg = bot.send_message(chat_id, text=text
-                                   ,parse_mode="HTML"
-                                   ,reply_markup=layout)
-        sent_id = sent_msg.message_id
-
-        # delete old pin message
-        if has_editable:
-            old_msg = storage.get_message_id(chat_id)
-            bot.delete_message(chat_id, old_msg)
-
-        # remember the message for future edits
-        storage.set_message_id(chat_id, sent_id)
-        bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
-    else:
-        msg_id = storage.get_message_id(chat_id)
-        bot.edit_message_text(
-            chat_id       = chat_id
-            ,message_id   = msg_id
-            ,text         = text
-            ,parse_mode   = "HTML"
-            ,reply_markup = layout
-            )
-        # also repin bot's message
-        bot.pin_chat_message(chat_id, msg_id, disable_notification=True)
+@curry
+def edited(storage : Storage, bot, update):
+    chat_id = update.edited_message.chat_id
+    msg_info = storage.MessageInfo(update.edited_message)
+    storage.replace_same_id(chat_id, msg_info)
+    print("replaced with")
+    send_message(storage, bot, chat_id)
 
 @curry
 def button_pressed(storage : Storage, bot, update):
@@ -140,6 +119,40 @@ def message(storage : Storage, bot, update):
         chat_id = update.message.chat_id
         storage.user_message_added(chat_id)
 
+
+# this function never deletes a message
+def send_message(storage : Storage, bot, chat_id : int) -> None:
+    text, layout = gen_post(storage, chat_id)
+
+    new_message = storage.did_user_message(chat_id)
+    has_editable = storage.has_message_id(chat_id)
+    if new_message or not has_editable:
+        # There recently was a user message, or there is no bot's pinned
+        # message to edit. We need to send a new one
+        sent_msg = bot.send_message(chat_id, text=text
+                                   ,parse_mode="HTML"
+                                   ,reply_markup=layout)
+        sent_id = sent_msg.message_id
+
+        # delete old pin message
+        if has_editable:
+            old_msg = storage.get_message_id(chat_id)
+            bot.delete_message(chat_id, old_msg)
+
+        # remember the message for future edits
+        storage.set_message_id(chat_id, sent_id)
+        bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
+    else:
+        msg_id = storage.get_message_id(chat_id)
+        bot.edit_message_text(
+            chat_id       = chat_id
+            ,message_id   = msg_id
+            ,text         = text
+            ,parse_mode   = "HTML"
+            ,reply_markup = layout
+            )
+        # also repin bot's message
+        bot.pin_chat_message(chat_id, msg_id, disable_notification=True)
 
 def gen_post(storage, chat_id : int
             ,button_status : ButtonsStatus = ButtonsStatus.Collapsed

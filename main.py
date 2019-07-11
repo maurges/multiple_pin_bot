@@ -36,6 +36,9 @@ def main(token : str) -> None:
     dp.add_handler(MessageHandler(pin_filter, handlers.pinned(storage)))
     # catch presses of "unpin" buttons
     dp.add_handler(CallbackQueryHandler(handlers.button_pressed(storage)))
+    # catch edited messages
+    edit_filter = Filters.update.edited_message
+    dp.add_handler(MessageHandler(edit_filter, handlers.edited(storage)))
     # catch any user message
     msg_filter = ~Filters.status_update
     dp.add_handler(MessageHandler(msg_filter, handlers.message(storage)))
