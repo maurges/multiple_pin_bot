@@ -7,6 +7,7 @@ License: published under GNU GPL-3
 
 import handlers
 import unittest
+import re
 from typing import *
 from random import randint
 from telegram import Message
@@ -269,3 +270,36 @@ class TestHandlers(unittest.TestCase):
 
             self.assertEqual(sent['m_id'], deleted['m_id'])
             self.assertEqual(sent['chat_id'], deleted['chat_id'])
+
+    def test_gathers_correct_links(self):
+        storage = self.get_storage()
+        bot = Bot()
+        pin_handler = handlers.pinned(storage)
+
+        msg = gen_message()
+        class Entity:
+            def __init__(self, start, length):
+                self.offset = start
+                self.length = length
+                self.type = "url"
+                self.url = None
+
+        link1 = "github.com"
+        link2 = "https://kde.org/"
+        start1 = 0
+        length1 = len(link1)
+        start2 = len(link1) + 1
+        length2 = len(link2)
+
+        msg.entities = [Entity(start1, length1), Entity(start2, length2)]
+        msg.text = "\n".join([link1, link2])
+
+        update = Update(msg, None)
+        pin_handler(bot, update)
+
+        sent = bot.sent[-1]["text"]
+        link_re = re.compile('<a href="([^"]+)">')
+        links = link_re.findall(sent)
+
+        self.assertEqual(links[0], link1)
+        self.assertEqual(links[1], link2)
