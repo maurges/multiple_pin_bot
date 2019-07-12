@@ -77,17 +77,22 @@ def gather_links(entities, text : str) -> Escaped:
 
 def single_pin(msg_info, index) -> str:
     lines : List[str] = []
+    head_icon = "📌"
 
     # first line: preview
     if len(msg_info.preview.wrapped) > 0:
         lines += [f"{msg_info.preview.wrapped}"]
 
-    # second line: icon, sender and date and index
+    # second line - header line: icon, sender and date and index
     time_str = msg_info.date.strftime("%A, %d %B %Y")
-    lines += [f"{msg_info.icon} <i>{escape(msg_info.sender.wrapped)}, {time_str} ({index})</i>"]
-
-    # third line: link to post
-    lines += [f'<a href="{msg_info.link}">Go to message</a>']
+    header_line =  f"{head_icon}"
+    header_line += "<i>"
+    header_line += f" {escape(msg_info.sender.wrapped)},"
+    header_line += f" <a href={msg_info.link}>"
+    header_line += f"{time_str} [{index}]"
+    header_line += "</a></i>"
+    header_line += f"{msg_info.icon}"
+    lines += [header_line]
 
     return "\n".join(lines)
 
@@ -112,11 +117,11 @@ def pins_post(pins, chat_id : int
     button_all = InlineKeyboardButton(
         "❌ Unpin all", callback_data=control.UnpinAll)
     button_keep_last = InlineKeyboardButton(
-        "🔺 Keep last", callback_data=control.KeepLast)
+        "Keep last 🔺", callback_data=control.KeepLast)
     button_expand = InlineKeyboardButton(
-        "Edit ➕", callback_data=control.ButtonsExpand)
+        "➕ Edit", callback_data=control.ButtonsExpand)
     button_collapse = InlineKeyboardButton(
-        "Close ➖", callback_data=control.ButtonsCollapse)
+        "➖ Close", callback_data=control.ButtonsCollapse)
 
     # special button case when only one pin:
     if len(pins) == 1:
@@ -125,13 +130,13 @@ def pins_post(pins, chat_id : int
 
     # when buttons are set to not shown
     if button_status == ButtonsStatus.Collapsed:
-        layout = [[button_keep_last, button_expand]]
+        layout = [[button_expand]]
         return (text, InlineKeyboardMarkup(layout))
 
     # generate all expanded buttons
 
     # first two rows: those buttons
-    layout = [[button_all, button_collapse]]
+    layout = [[button_collapse], [button_all, button_keep_last]]
 
     # other buttons: this style with special data
     def on_button(msg, index) -> str:
