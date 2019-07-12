@@ -174,22 +174,22 @@ class TestHandlers(unittest.TestCase):
 
         for pin_update, unpin_update, amount in it:
             pin_handler(bot, pin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount)
+            self.assertEqual(len(storage.get(chat_id)), amount)
 
             button_handler(bot, unpin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount - 1)
+            self.assertEqual(len(storage.get(chat_id)), amount - 1)
             # test deleting non-existant
             button_handler(bot, unpin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount - 1)
+            self.assertEqual(len(storage.get(chat_id)), amount - 1)
 
             #second add of deleted to keep amount increasing
             pin_handler(bot, pin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount)
+            self.assertEqual(len(storage.get(chat_id)), amount)
 
         unpin_all_cb = Update.CbQuery(msgs[0], handlers.UnpinAll)
         unpin_all_upd = Update(None, unpin_all_cb)
         button_handler(bot, unpin_all_upd)
-        self.assertFalse(chat_id in storage._pin_data)
+        self.assertFalse(storage.has(chat_id))
 
     def test_keep_last(self):
         storage = Storage()
@@ -204,11 +204,11 @@ class TestHandlers(unittest.TestCase):
 
         for update, amount in zip(upds, range(1, message_amount + 1)):
             pin_handler(bot, update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount)
+            self.assertEqual(len(storage.get(chat_id)), amount)
 
         keep_last_cb = Update.CbQuery(msgs[0], handlers.KeepLast)
         keep_last_upd = Update(None, keep_last_cb)
         button_handler(bot, keep_last_upd)
 
-        self.assertTrue(chat_id in storage._pin_data)
-        self.assertEqual(len(storage._pin_data[chat_id]), 1)
+        self.assertTrue(storage.has(chat_id))
+        self.assertEqual(len(storage.get(chat_id)), 1)
