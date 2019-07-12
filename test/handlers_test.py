@@ -117,9 +117,11 @@ Main testing classes
 """
 
 class TestHandlers(unittest.TestCase):
+    def get_storage(self):
+        return Storage()
 
     def test_pin_sends_and_edits(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
 
@@ -135,7 +137,7 @@ class TestHandlers(unittest.TestCase):
         self.assertEqual(len(bot.edited), message_amount - 1)
 
     def test_user_message_resends(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
         message_handler = handlers.message(storage)
@@ -157,7 +159,7 @@ class TestHandlers(unittest.TestCase):
         self.assertEqual(len(bot.edited), 0)
 
     def test_handlers_store(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
         button_handler = handlers.button_pressed(storage)
@@ -192,7 +194,7 @@ class TestHandlers(unittest.TestCase):
         self.assertFalse(storage.has(chat_id))
 
     def test_keep_last(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
         button_handler = handlers.button_pressed(storage)
