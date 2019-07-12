@@ -4,6 +4,7 @@ from typing import *
 from html import escape
 from telegram import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from enum import Enum
+from message_kind import Kind
 import control
 
 """
@@ -80,8 +81,12 @@ def single_pin(msg_info, index) -> str:
     head_icon = "🏷"
 
     # first line: preview
+    preview_line = ""
+    if msg_info.kind != Kind.Text:
+        preview_line = f"{msg_info.icon} "
     if len(msg_info.preview.wrapped) > 0:
-        lines += [f"{msg_info.preview.wrapped}"]
+        preview_line += msg_info.preview.wrapped
+    lines += [preview_line]
 
     # second line - header line: icon, sender and date and index
     time_str = msg_info.date.strftime("%A, %d %B %Y")
@@ -92,7 +97,6 @@ def single_pin(msg_info, index) -> str:
     header_line += f' <a href="{msg_info.link}">'
     header_line += f"{time_str} [{index}]"
     header_line += "</a>"
-    header_line += f" {msg_info.icon}"
     lines += [header_line]
 
     return "\n".join(lines)
@@ -141,7 +145,7 @@ def pins_post(pins, chat_id : int
 
     # other buttons: this style with special data
     def on_button(msg, index) -> str:
-        return f"{msg.icon} {index + 1}"
+        return f"{index + 1} {msg.icon}"
     cb_data = control.unpin_message_data
 
     it1 = zip(pins, range(len(pins)))
