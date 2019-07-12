@@ -77,7 +77,7 @@ def gather_links(entities, text : str) -> Escaped:
 
 def single_pin(msg_info, index) -> str:
     lines : List[str] = []
-    head_icon = "📌"
+    head_icon = "🏷"
 
     # first line: preview
     if len(msg_info.preview.wrapped) > 0:
@@ -88,10 +88,11 @@ def single_pin(msg_info, index) -> str:
     header_line =  f"{head_icon}"
     header_line += "<i>"
     header_line += f" {escape(msg_info.sender.wrapped)},"
-    header_line += f" <a href={msg_info.link}>"
+    header_line += "</i>"
+    header_line += f' <a href="{msg_info.link}">'
     header_line += f"{time_str} [{index}]"
-    header_line += "</a></i>"
-    header_line += f"{msg_info.icon}"
+    header_line += "</a>"
+    header_line += f" {msg_info.icon}"
     lines += [header_line]
 
     return "\n".join(lines)
