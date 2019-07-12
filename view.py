@@ -47,7 +47,7 @@ def is_link(entity):
 def has_links_in(entities) -> bool:
     return any(map(is_link, entities))
 def link_text(entity, all_text : str) -> Escaped:
-    start : int = entity.offset - 1
+    start : int = entity.offset
     end : int = start + entity.length
     return Escaped(all_text[start : end])
 def make_link(href : Escaped, body : Escaped) -> Escaped:
