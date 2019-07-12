@@ -99,7 +99,7 @@ class Bot:
         # assert that editing existing message
         assert list(filter(lambda m: m["m_id"] == message_id, self.sent)) != []
         self.edited += [{'chat_id' : chat_id
-                        ,'msg_id'  : message_id
+                        ,'m_id'  : message_id
                         ,'text'    : text
                         ,'markup'  : reply_markup
                         }]
@@ -108,7 +108,7 @@ class Bot:
         # assert that editing existing message
         assert list(filter(lambda m: m["m_id"] == message_id, self.sent)) != []
         self.deleted += [{'chat_id' : chat_id
-                         ,'msg_id'  : message_id
+                         ,'m_id'  : message_id
                          }]
 
 
@@ -214,3 +214,58 @@ class TestHandlers(unittest.TestCase):
 
         self.assertTrue(storage.has(chat_id))
         self.assertEqual(len(storage.get(chat_id)), 1)
+
+    def test_deletes_on_nothing(self):
+        storage = self.get_storage()
+        bot = Bot()
+
+        pin_handler = handlers.pinned(storage)
+        button_handler = handlers.button_pressed(storage)
+
+        message_amount = 5
+        msgs = gen_same_chat_messages(message_amount)
+        msg_upds = [Update(msg, None) for msg in msgs]
+
+        unpins = [gen_unpin_data(msg) for msg in msgs]
+        unpin_upds = [Update(None, unpin) for unpin in unpins]
+
+        chat_id = msgs[0].chat.id
+        for pin_update in msg_upds:
+            pin_handler(bot, pin_update)
+
+        for unpin_update in unpin_upds:
+            button_handler(bot, unpin_update)
+
+        self.assertEqual(len(bot.deleted), 1)
+        self.assertNotEqual(len(bot.sent), 0)
+        self.assertEqual(bot.sent[0]['m_id'], bot.deleted[0]['m_id'])
+        self.assertEqual(bot.sent[0]['chat_id'], bot.deleted[0]['chat_id'])
+
+        sent_first_batch = len(bot.sent)
+        button_handler(bot, unpin_upds[0])
+        self.assertEqual(len(bot.deleted), 1)
+        self.assertEqual(len(bot.sent), sent_first_batch)
+
+    def test_resending_deletes_old(self):
+        storage = self.get_storage()
+        bot = Bot()
+        pin_handler = handlers.pinned(storage)
+        message_handler = handlers.message(storage)
+
+        message_amount = 5
+        msgs = gen_same_chat_messages(message_amount)
+        upds = [Update(msg, None) for msg in msgs]
+
+        user_message = gen_message()
+        user_message.chat.id = msgs[0].chat.id
+        user_update = Update(user_message, None)
+
+        for update in upds:
+            pin_handler(bot, update)
+            sent = bot.sent[-1]
+            message_handler(bot, user_update)
+            pin_handler(bot, update)
+            deleted = bot.deleted[-1]
+
+            self.assertEqual(sent['m_id'], deleted['m_id'])
+            self.assertEqual(sent['chat_id'], deleted['chat_id'])
