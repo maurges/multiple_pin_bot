@@ -75,16 +75,16 @@ def gather_links(entities, text : str) -> Escaped:
 
 
 
-def single_pin(msg_info) -> str:
+def single_pin(msg_info, index) -> str:
     lines : List[str] = []
 
     # first line: preview
     if len(msg_info.preview.wrapped) > 0:
         lines += [f"{msg_info.preview.wrapped}"]
 
-    # second line: icon, sender and date
+    # second line: icon, sender and date and index
     time_str = msg_info.date.strftime("%A, %d %B %Y")
-    lines += [f"{msg_info.icon} <i>{escape(msg_info.sender.wrapped)}, {time_str}</i>"]
+    lines += [f"{msg_info.icon} <i>{escape(msg_info.sender.wrapped)}, {time_str} ({index})</i>"]
 
     # third line: link to post
     lines += [f'<a href="{msg_info.link}">Go to message</a>']
@@ -106,7 +106,7 @@ class ButtonsStatus(Enum):
 def pins_post(pins, chat_id : int
              ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
              ) -> Tuple[str, InlineKeyboardMarkup]:
-    text = "\n\n".join(map(single_pin, pins))
+    text = "\n\n".join(single_pin(pin, i + 1) for pin, i in zip(pins, range(len(pins))))
 
     # generate buttons for pin control
     button_all = InlineKeyboardButton(
@@ -135,7 +135,7 @@ def pins_post(pins, chat_id : int
 
     # other buttons: this style with special data
     def on_button(msg, index) -> str:
-        return f"{index + 1} {msg.icon}"
+        return f"{msg.icon} {index + 1}"
     cb_data = control.unpin_message_data
 
     it1 = zip(pins, range(len(pins)))
