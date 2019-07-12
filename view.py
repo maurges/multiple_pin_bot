@@ -82,10 +82,14 @@ def single_pin(msg_info, index) -> str:
 
     # first line: preview
     preview_line = ""
-    if msg_info.kind != Kind.Text:
-        preview_line = f"{msg_info.icon} "
-    if len(msg_info.preview.wrapped) > 0:
+    if len(msg_info.preview.wrapped) == 0:
+        # populate it with icon
+        preview_line = f"{msg_info.icon}"
+    else:
         preview_line += msg_info.preview.wrapped
+        # add icon to disambiguate text from file or photo
+        if msg_info.kind in [Kind.Photo, Kind.File]:
+            preview_line += f" {msg_info.icon}"
     lines += [preview_line]
 
     # second line - header line: icon, sender and date and index
