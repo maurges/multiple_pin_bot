@@ -114,6 +114,29 @@ def button_pressed(storage : Storage, bot, update):
         )
 
 @curry
+def message_edited(storage : Storage, bot, update):
+    edited = update.edited_message
+    chat_id = edited.chat_id
+
+    # do nothing if message is already deleted or never existed
+    if not storage.has_message_id(chat_id):
+        return
+    msg_id = storage.get_message_id(chat_id)
+
+    msg = storage.MessageInfo(edited)
+    storage.replace_same_id(chat_id, msg)
+
+    text, layout = gen_post(storage, chat_id)
+    bot.edit_message_text(
+        chat_id       = chat_id
+        ,message_id   = msg_id
+        ,text         = text
+        ,parse_mode   = "HTML"
+        ,reply_markup = layout
+        )
+
+
+@curry
 def message(storage : Storage, bot, update):
     if update.message and update.message.chat_id:
         chat_id = update.message.chat_id
