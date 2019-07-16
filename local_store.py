@@ -2,8 +2,9 @@
 
 from typing import *
 from datetime import datetime
-from enum import IntEnum
 from view import gen_preview, has_links_in, Escaped
+from message_kind import Kind
+import message_kind
 
 """
 Author: d86leader@mail.com, 2019
@@ -19,21 +20,12 @@ chat id
 # structure with essential message data
 # and methods for generating it from tg message
 class MessageInfoType:
-    class Kind(IntEnum):
-        Default = 0
-        Text  = 1
-        Photo = 2
-        File  = 3
-        # current api doesn't support polls
-        # Poll  = 4
-        Sticker = 5
-        Link  = 6
-
+    Kind = message_kind.Kind
     m_id    : int
     kind    : Kind
     link    : str
     sender  : Escaped
-    icon    : Escaped
+    icon    : str
     preview : Escaped
     date    : datetime
 

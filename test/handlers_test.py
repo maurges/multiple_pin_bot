@@ -7,6 +7,7 @@ License: published under GNU GPL-3
 
 import handlers
 import unittest
+import re
 from typing import *
 from random import randint
 from telegram import Message
@@ -99,7 +100,7 @@ class Bot:
         # assert that editing existing message
         assert list(filter(lambda m: m["m_id"] == message_id, self.sent)) != []
         self.edited += [{'chat_id' : chat_id
-                        ,'msg_id'  : message_id
+                        ,'m_id'  : message_id
                         ,'text'    : text
                         ,'markup'  : reply_markup
                         }]
@@ -108,7 +109,7 @@ class Bot:
         # assert that editing existing message
         assert list(filter(lambda m: m["m_id"] == message_id, self.sent)) != []
         self.deleted += [{'chat_id' : chat_id
-                         ,'msg_id'  : message_id
+                         ,'m_id'  : message_id
                          }]
 
 
@@ -117,9 +118,11 @@ Main testing classes
 """
 
 class TestHandlers(unittest.TestCase):
+    def get_storage(self):
+        return Storage()
 
     def test_pin_sends_and_edits(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
 
@@ -135,7 +138,7 @@ class TestHandlers(unittest.TestCase):
         self.assertEqual(len(bot.edited), message_amount - 1)
 
     def test_user_message_resends(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
         message_handler = handlers.message(storage)
@@ -157,7 +160,7 @@ class TestHandlers(unittest.TestCase):
         self.assertEqual(len(bot.edited), 0)
 
     def test_handlers_store(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
         button_handler = handlers.button_pressed(storage)
@@ -174,25 +177,25 @@ class TestHandlers(unittest.TestCase):
 
         for pin_update, unpin_update, amount in it:
             pin_handler(bot, pin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount)
+            self.assertEqual(len(storage.get(chat_id)), amount)
 
             button_handler(bot, unpin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount - 1)
+            self.assertEqual(len(storage.get(chat_id)), amount - 1)
             # test deleting non-existant
             button_handler(bot, unpin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount - 1)
+            self.assertEqual(len(storage.get(chat_id)), amount - 1)
 
             #second add of deleted to keep amount increasing
             pin_handler(bot, pin_update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount)
+            self.assertEqual(len(storage.get(chat_id)), amount)
 
         unpin_all_cb = Update.CbQuery(msgs[0], handlers.UnpinAll)
         unpin_all_upd = Update(None, unpin_all_cb)
         button_handler(bot, unpin_all_upd)
-        self.assertFalse(chat_id in storage._pin_data)
+        self.assertFalse(storage.has(chat_id))
 
     def test_keep_last(self):
-        storage = Storage()
+        storage = self.get_storage()
         bot = Bot()
         pin_handler = handlers.pinned(storage)
         button_handler = handlers.button_pressed(storage)
@@ -204,11 +207,99 @@ class TestHandlers(unittest.TestCase):
 
         for update, amount in zip(upds, range(1, message_amount + 1)):
             pin_handler(bot, update)
-            self.assertEqual(len(storage._pin_data[chat_id]), amount)
+            self.assertEqual(len(storage.get(chat_id)), amount)
 
         keep_last_cb = Update.CbQuery(msgs[0], handlers.KeepLast)
         keep_last_upd = Update(None, keep_last_cb)
         button_handler(bot, keep_last_upd)
 
-        self.assertTrue(chat_id in storage._pin_data)
-        self.assertEqual(len(storage._pin_data[chat_id]), 1)
+        self.assertTrue(storage.has(chat_id))
+        self.assertEqual(len(storage.get(chat_id)), 1)
+
+    def test_deletes_on_nothing(self):
+        storage = self.get_storage()
+        bot = Bot()
+
+        pin_handler = handlers.pinned(storage)
+        button_handler = handlers.button_pressed(storage)
+
+        message_amount = 5
+        msgs = gen_same_chat_messages(message_amount)
+        msg_upds = [Update(msg, None) for msg in msgs]
+
+        unpins = [gen_unpin_data(msg) for msg in msgs]
+        unpin_upds = [Update(None, unpin) for unpin in unpins]
+
+        chat_id = msgs[0].chat.id
+        for pin_update in msg_upds:
+            pin_handler(bot, pin_update)
+
+        for unpin_update in unpin_upds:
+            button_handler(bot, unpin_update)
+
+        self.assertEqual(len(bot.deleted), 1)
+        self.assertNotEqual(len(bot.sent), 0)
+        self.assertEqual(bot.sent[0]['m_id'], bot.deleted[0]['m_id'])
+        self.assertEqual(bot.sent[0]['chat_id'], bot.deleted[0]['chat_id'])
+
+        sent_first_batch = len(bot.sent)
+        button_handler(bot, unpin_upds[0])
+        self.assertEqual(len(bot.deleted), 1)
+        self.assertEqual(len(bot.sent), sent_first_batch)
+
+    def test_resending_deletes_old(self):
+        storage = self.get_storage()
+        bot = Bot()
+        pin_handler = handlers.pinned(storage)
+        message_handler = handlers.message(storage)
+
+        message_amount = 5
+        msgs = gen_same_chat_messages(message_amount)
+        upds = [Update(msg, None) for msg in msgs]
+
+        user_message = gen_message()
+        user_message.chat.id = msgs[0].chat.id
+        user_update = Update(user_message, None)
+
+        for update in upds:
+            pin_handler(bot, update)
+            sent = bot.sent[-1]
+            message_handler(bot, user_update)
+            pin_handler(bot, update)
+            deleted = bot.deleted[-1]
+
+            self.assertEqual(sent['m_id'], deleted['m_id'])
+            self.assertEqual(sent['chat_id'], deleted['chat_id'])
+
+    def test_gathers_correct_links(self):
+        storage = self.get_storage()
+        bot = Bot()
+        pin_handler = handlers.pinned(storage)
+
+        msg = gen_message()
+        class Entity:
+            def __init__(self, start, length):
+                self.offset = start
+                self.length = length
+                self.type = "url"
+                self.url = None
+
+        link1 = "github.com"
+        link2 = "https://kde.org/"
+        start1 = 0
+        length1 = len(link1)
+        start2 = len(link1) + 1
+        length2 = len(link2)
+
+        msg.entities = [Entity(start1, length1), Entity(start2, length2)]
+        msg.text = "\n".join([link1, link2])
+
+        update = Update(msg, None)
+        pin_handler(bot, update)
+
+        sent = bot.sent[-1]["text"]
+        link_re = re.compile('<a href="([^"]+)">')
+        links = link_re.findall(sent)
+
+        self.assertEqual(links[0], link1)
+        self.assertEqual(links[1], link2)

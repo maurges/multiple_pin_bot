@@ -4,6 +4,7 @@ from typing import *
 from html import escape
 from telegram import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from enum import Enum
+from message_kind import Kind
 import control
 
 """
@@ -47,7 +48,7 @@ def is_link(entity):
 def has_links_in(entities) -> bool:
     return any(map(is_link, entities))
 def link_text(entity, all_text : str) -> Escaped:
-    start : int = entity.offset - 1
+    start : int = entity.offset
     end : int = start + entity.length
     return Escaped(all_text[start : end])
 def make_link(href : Escaped, body : Escaped) -> Escaped:
@@ -75,19 +76,32 @@ def gather_links(entities, text : str) -> Escaped:
 
 
 
-def single_pin(msg_info) -> str:
+def single_pin(msg_info, index) -> str:
     lines : List[str] = []
+    head_icon = "🏷"
 
     # first line: preview
-    if len(msg_info.preview.wrapped) > 0:
-        lines += [f"{msg_info.preview.wrapped}"]
+    preview_line = ""
+    if len(msg_info.preview.wrapped) == 0:
+        # populate it with icon
+        preview_line = f"{msg_info.icon}"
+    else:
+        preview_line += msg_info.preview.wrapped
+        # add icon to disambiguate text from file or photo
+        if msg_info.kind in [Kind.Photo, Kind.File]:
+            preview_line += f" {msg_info.icon}"
+    lines += [preview_line]
 
-    # second line: icon, sender and date
+    # second line - header line: icon, sender and date and index
     time_str = msg_info.date.strftime("%A, %d %B %Y")
-    lines += [f"{msg_info.icon} <i>{escape(msg_info.sender.wrapped)}, {time_str}</i>"]
-
-    # third line: link to post
-    lines += [f'<a href="{msg_info.link}">Go to message</a>']
+    header_line =  f"{head_icon}"
+    header_line += "<i>"
+    header_line += f" {escape(msg_info.sender.wrapped)},"
+    header_line += "</i>"
+    header_line += f' <a href="{msg_info.link}">'
+    header_line += f"{time_str} [{index}]"
+    header_line += "</a>"
+    lines += [header_line]
 
     return "\n".join(lines)
 
@@ -106,17 +120,17 @@ class ButtonsStatus(Enum):
 def pins_post(pins, chat_id : int
              ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
              ) -> Tuple[str, InlineKeyboardMarkup]:
-    text = "\n\n".join(map(single_pin, pins))
+    text = "\n\n".join(single_pin(pin, i + 1) for pin, i in zip(pins, range(len(pins))))
 
     # generate buttons for pin control
     button_all = InlineKeyboardButton(
         "❌ Unpin all", callback_data=control.UnpinAll)
     button_keep_last = InlineKeyboardButton(
-        "🔺 Keep last", callback_data=control.KeepLast)
+        "Keep last 🔺", callback_data=control.KeepLast)
     button_expand = InlineKeyboardButton(
-        "Edit ➕", callback_data=control.ButtonsExpand)
+        "➕ Edit", callback_data=control.ButtonsExpand)
     button_collapse = InlineKeyboardButton(
-        "Close ➖", callback_data=control.ButtonsCollapse)
+        "➖ Close", callback_data=control.ButtonsCollapse)
 
     # special button case when only one pin:
     if len(pins) == 1:
@@ -125,13 +139,13 @@ def pins_post(pins, chat_id : int
 
     # when buttons are set to not shown
     if button_status == ButtonsStatus.Collapsed:
-        layout = [[button_keep_last, button_expand]]
+        layout = [[button_expand]]
         return (text, InlineKeyboardMarkup(layout))
 
     # generate all expanded buttons
 
     # first two rows: those buttons
-    layout = [[button_all, button_collapse]]
+    layout = [[button_collapse], [button_all, button_keep_last]]
 
     # other buttons: this style with special data
     def on_button(msg, index) -> str:
