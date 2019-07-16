@@ -2,7 +2,7 @@
 
 from typing import *
 from datetime import datetime
-from view import gen_preview, has_links_in, Escaped
+from view import gen_preview, gen_icon, has_links_in, Escaped
 from message_kind import Kind
 import message_kind
 import json
@@ -17,7 +17,6 @@ Also this structure is json-serializable through special methods.
 """
 
 class MessageInfo:
-    Kind = message_kind.Kind
     m_id    : int
     kind    : Kind
     link    : str
@@ -33,7 +32,7 @@ class MessageInfo:
         self.m_id = msg.message_id
         self.kind = self.gen_kind(msg)
         self.link = self.gen_link(msg)
-        self.icon = self.gen_icon(self.kind)
+        self.icon = gen_icon(self.kind)
         self.preview = gen_preview(msg)
         self.date = msg.date
 
@@ -47,17 +46,17 @@ class MessageInfo:
     @staticmethod
     def gen_kind(msg) -> Kind:
         if msg.photo and len(msg.photo) > 0:
-            return MessageInfo.Kind.Photo
+            return Kind.Photo
         elif msg.document:
-            return MessageInfo.Kind.File
+            return Kind.File
         elif msg.sticker:
-            return MessageInfo.Kind.Sticker
+            return Kind.Sticker
         elif has_links_in(msg.entities):
-            return MessageInfo.Kind.Link
+            return Kind.Link
         elif msg.text and len(msg.text) > 0:
-            return MessageInfo.Kind.Text
+            return Kind.Text
         else:
-            return MessageInfo.Kind.Default
+            return Kind.Default
 
     @staticmethod
     def gen_link(msg) -> str:
@@ -77,19 +76,6 @@ class MessageInfo:
         return f"https://t.me/c/{chat_id}/{msg.message_id}"
 
     @staticmethod
-    def gen_icon(kind : Kind) -> str:
-        if kind == MessageInfo.Kind.Text:
-            return "📌"
-        elif kind == MessageInfo.Kind.Photo:
-            return "🖼"
-        elif kind == MessageInfo.Kind.File:
-            return "📎"
-        elif kind == MessageInfo.Kind.Sticker:
-            return "😀"
-        elif kind == MessageInfo.Kind.Link:
-            return "🔗"
-        else:
-            return "📌"
 
     # JSON methods
 
@@ -111,7 +97,7 @@ class MessageInfo:
         self = MessageInfo(None)
 
         self.m_id = dict['m_id']
-        self.kind    = MessageInfo.Kind(dict['kind'])
+        self.kind    = Kind(dict['kind'])
         self.link    = dict['link']
         self.sender  = Escaped.from_escaped(dict['sender'])
         self.icon    = dict['icon']
