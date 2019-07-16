@@ -6,6 +6,7 @@ from local_store import Storage
 from enum import Enum
 from control import parse_unpin_data
 from control import UnpinAll, KeepLast, ButtonsExpand, ButtonsCollapse
+from message_info import MessageInfo
 from view import ButtonsStatus
 import view
 
@@ -54,7 +55,7 @@ def pinned(storage : Storage, bot, update):
         return
 
     chat_id = update.message.chat_id
-    msg_info = storage.MessageInfo(update.message.pinned_message)
+    msg_info = MessageInfo(update.message.pinned_message)
 
     # add pinned message for this chat
     storage.add(chat_id, msg_info)
