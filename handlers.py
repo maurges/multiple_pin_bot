@@ -6,7 +6,9 @@ from local_store import Storage
 from enum import Enum
 from control import parse_unpin_data
 from control import UnpinAll, KeepLast, ButtonsExpand, ButtonsCollapse
+from message_info import MessageInfo
 from view import ButtonsStatus
+from varlock import VarLock
 import view
 
 """
@@ -15,6 +17,11 @@ License: published under GNU GPL-3
 
 Description: main handlers for telegram
 """
+
+
+# A lock for different chats. It's global for each handler, because they all
+# have access to same chats.
+chat_lock = VarLock()
 
 
 # decorator: curry first positional argument of function
@@ -54,20 +61,22 @@ def pinned(storage : Storage, bot, update):
         return
 
     chat_id = update.message.chat_id
-    msg_info = storage.MessageInfo(update.message.pinned_message)
+    with chat_lock.lock(chat_id):
+        msg_info = MessageInfo(update.message.pinned_message)
 
-    # add pinned message for this chat
-    storage.add(chat_id, msg_info)
-    # send or update the bot's pinned message
-    send_message(storage, bot, chat_id)
+        # add pinned message for this chat
+        storage.add(chat_id, msg_info)
+        # send or update the bot's pinned message
+        send_message(storage, bot, chat_id)
 
 @curry
 def edited(storage : Storage, bot, update):
     chat_id = update.edited_message.chat_id
-    msg_info = storage.MessageInfo(update.edited_message)
-    storage.replace_same_id(chat_id, msg_info)
-    print("replaced with")
-    send_message(storage, bot, chat_id)
+    with chat_lock.lock(chat_id):
+        msg_info = MessageInfo(update.edited_message)
+        storage.replace_same_id(chat_id, msg_info)
+        print("replaced with")
+        send_message(storage, bot, chat_id)
 
 @curry
 def button_pressed(storage : Storage, bot, update):
@@ -75,43 +84,41 @@ def button_pressed(storage : Storage, bot, update):
     cb.answer("")
     chat_id = cb.message.chat_id
 
-    # race check: do nothing if message already destroyed
-    # FIXME it would be quite nice to have a mutex here btw
-    # but if the race happens, it's no biggie: failing with error is the same
-    # as doing nothing
-    if not storage.has_message_id(chat_id):
-        return
-    msg_id = storage.get_message_id(chat_id)
+    with chat_lock.lock(chat_id):
+        # do nothing if message already destroyed
+        if not storage.has_message_id(chat_id):
+            return
+        msg_id = storage.get_message_id(chat_id)
 
-    # default status of response buttons. May be changed in handling below
-    response_buttons = ButtonsStatus.Collapsed
-    if cb.data == UnpinAll:
-        storage.clear(chat_id)
-    elif cb.data == KeepLast:
-        storage.clear_keep_last(chat_id)
-    elif cb.data == ButtonsExpand:
-        response_buttons = ButtonsStatus.Expanded
-    elif cb.data == ButtonsCollapse:
+        # default status of response buttons. May be changed in handling below
         response_buttons = ButtonsStatus.Collapsed
-    else:
-        to_unpin_id, msg_index = parse_unpin_data(cb.data)
-        storage.remove(chat_id, to_unpin_id, msg_index)
-        response_buttons = ButtonsStatus.Expanded
+        if cb.data == UnpinAll:
+            storage.clear(chat_id)
+        elif cb.data == KeepLast:
+            storage.clear_keep_last(chat_id)
+        elif cb.data == ButtonsExpand:
+            response_buttons = ButtonsStatus.Expanded
+        elif cb.data == ButtonsCollapse:
+            response_buttons = ButtonsStatus.Collapsed
+        else:
+            to_unpin_id, msg_index = parse_unpin_data(cb.data)
+            storage.remove(chat_id, to_unpin_id, msg_index)
+            response_buttons = ButtonsStatus.Expanded
 
-    text, layout = gen_post(storage, chat_id, response_buttons)
-    if (text, layout) == view.EmptyPost:
-        bot.unpin_chat_message(chat_id, msg_id)
-        bot.delete_message(chat_id, msg_id)
-        storage.remove_message_id(chat_id)
-        return
+        text, layout = gen_post(storage, chat_id, response_buttons)
+        if (text, layout) == view.EmptyPost:
+            bot.unpin_chat_message(chat_id, msg_id)
+            bot.delete_message(chat_id, msg_id)
+            storage.remove_message_id(chat_id)
+            return
 
-    bot.edit_message_text(
-        chat_id       = chat_id
-        ,message_id   = msg_id
-        ,text         = text
-        ,parse_mode   = "HTML"
-        ,reply_markup = layout
-        )
+        bot.edit_message_text(
+            chat_id       = chat_id
+            ,message_id   = msg_id
+            ,text         = text
+            ,parse_mode   = "HTML"
+            ,reply_markup = layout
+            )
 
 @curry
 def message_edited(storage : Storage, bot, update):
@@ -123,7 +130,7 @@ def message_edited(storage : Storage, bot, update):
         return
     msg_id = storage.get_message_id(chat_id)
 
-    msg = storage.MessageInfo(edited)
+    msg = MessageInfo(edited)
     storage.replace_same_id(chat_id, msg)
 
     text, layout = gen_post(storage, chat_id)
@@ -138,9 +145,12 @@ def message_edited(storage : Storage, bot, update):
 
 @curry
 def message(storage : Storage, bot, update):
+    # this is in this `if` statement because current api version doesn't
+    # support a filter like this, even thought docs say it does
     if update.message and update.message.chat_id:
         chat_id = update.message.chat_id
-        storage.user_message_added(chat_id)
+        with chat_lock.lock(chat_id):
+            storage.user_message_added(chat_id)
 
 
 # this function never deletes a message

@@ -29,6 +29,20 @@ class Escaped:
         return self.wrapped
 
 
+def gen_icon(kind : Kind) -> str:
+    if kind == Kind.Text:
+        return "📝"
+    elif kind == Kind.Photo:
+        return "🖼"
+    elif kind == Kind.File:
+        return "📎"
+    elif kind == Kind.Sticker:
+        return "😀"
+    elif kind == Kind.Link:
+        return "🔗"
+    else:
+        return "📍"
+
 def gen_preview(msg : Message) -> Escaped:
     max_length = 280
 

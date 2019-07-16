@@ -1,5 +1,5 @@
 TESTDIR = test
-TESTFILES = handlers_test
+TESTFILES = handlers_test varlock_test
 
 .PHONY: test
 test:

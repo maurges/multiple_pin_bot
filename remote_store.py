@@ -2,9 +2,7 @@
 
 from typing import *
 from redis import Redis
-from datetime import datetime
-from local_store import Escaped
-import local_store
+from message_info import MessageInfo
 import json
 
 """
@@ -16,44 +14,7 @@ This presents the same interface as local_store, but uses the remote redis
 server for storing data
 """
 
-
-class MessageInfoType(local_store.MessageInfoType):
-    def __init__(self, msg) -> None:
-        if msg is None:
-            return
-        else:
-            super().__init__(msg)
-
-    def dumps(self) -> str:
-        self_dict = {
-             'm_id'    : self.m_id
-            ,'kind'    : int(self.kind)
-            ,'link'    : self.link
-            ,'sender'  : self.sender.wrapped
-            ,'icon'    : self.icon
-            ,'preview' : self.preview.wrapped
-            ,'date'    : int(self.date.timestamp())
-            }
-        return json.dumps(self_dict)
-
-    @staticmethod
-    def loads(text : Union[str, bytes]) -> 'MessageInfoType':
-        dict = json.loads(text)
-        self = MessageInfoType(None)
-
-        self.m_id = dict['m_id']
-        self.kind    = MessageInfoType.Kind(dict['kind'])
-        self.link    = dict['link']
-        self.sender  = Escaped.from_escaped(dict['sender'])
-        self.icon    = dict['icon']
-        self.preview = Escaped.from_escaped(dict['preview'])
-        self.date    = datetime.utcfromtimestamp(dict['date'])
-
-        return self
-
 class Storage:
-    MessageInfo = MessageInfoType
-
     RedisAddr = "redis"
     RedisPort = 6379
 
@@ -69,13 +30,13 @@ class Storage:
         key = str(chat_id)
         return redis.llen(key) != 0
 
-    def get(self, chat_id : int) -> List[MessageInfoType]:
+    def get(self, chat_id : int) -> List[MessageInfo]:
         redis = self._pins_db
         key = str(chat_id)
         dumps = redis.lrange(key, 0, -1)
-        return list(map(MessageInfoType.loads, dumps))
+        return list(map(MessageInfo.loads, dumps))
 
-    def add(self, chat_id : int, msg : MessageInfoType) -> None:
+    def add(self, chat_id : int, msg : MessageInfo) -> None:
         redis = self._pins_db
         key = str(chat_id)
         value = msg.dumps()
@@ -111,7 +72,7 @@ class Storage:
         # delete the special value
         redis.lrem(key, 0, special)
 
-    def replace_same_id(self, chat_id : int, edited : MessageInfoType) -> None:
+    def replace_same_id(self, chat_id : int, edited : MessageInfo) -> None:
         redis = self._pins_db
         key = str(chat_id)
         dumps = redis.lrange(key, 0, -1)

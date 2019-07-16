@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 
 from typing import *
-from datetime import datetime
-from view import gen_preview, has_links_in, Escaped
-from message_kind import Kind
-import message_kind
+from message_info import MessageInfo
 
 """
 Author: d86leader@mail.com, 2019
@@ -17,87 +14,9 @@ chat id
 """
 
 
-# structure with essential message data
-# and methods for generating it from tg message
-class MessageInfoType:
-    Kind = message_kind.Kind
-    m_id    : int
-    kind    : Kind
-    link    : str
-    sender  : Escaped
-    icon    : str
-    preview : Escaped
-    date    : datetime
-
-    def __init__(self, msg) -> None:
-        self.m_id = msg.message_id
-
-        self.kind = self.gen_kind(msg)
-        self.link = self.gen_link(msg)
-        self.icon = self.gen_icon(self.kind)
-        self.preview = gen_preview(msg)
-        self.date = msg.date
-
-        # generate sender info
-        sender = msg.from_user.first_name
-        if msg.from_user.last_name:
-            sender += " " + msg.from_user.last_name
-        self.sender = Escaped(sender)
-
-
-    @staticmethod
-    def gen_kind(msg) -> Kind:
-        if msg.photo and len(msg.photo) > 0:
-            return MessageInfoType.Kind.Photo
-        elif msg.document:
-            return MessageInfoType.Kind.File
-        elif msg.sticker:
-            return MessageInfoType.Kind.Sticker
-        elif has_links_in(msg.entities):
-            return MessageInfoType.Kind.Link
-        elif msg.text and len(msg.text) > 0:
-            return MessageInfoType.Kind.Text
-        else:
-            return MessageInfoType.Kind.Default
-
-    @staticmethod
-    def gen_link(msg) -> str:
-        chat_id = msg.chat_id
-        # this api adapter uses strage int representation. Citation:
-        # botapi prefixes:
-        # + for pms
-        # - for small group chats
-        # -100 for channels and megagroups
-        # we need to make a positive out of this
-        if chat_id < 0:
-            chat_id = -chat_id
-            chat_s = str(chat_id)
-            if chat_s[0:3] == "100":
-                chat_s = chat_s[3:]
-                chat_id = int(chat_s)
-        return f"https://t.me/c/{chat_id}/{msg.message_id}"
-
-    @staticmethod
-    def gen_icon(kind : Kind) -> str:
-        if kind == MessageInfoType.Kind.Text:
-            return "📌"
-        elif kind == MessageInfoType.Kind.Photo:
-            return "🖼"
-        elif kind == MessageInfoType.Kind.File:
-            return "📎"
-        elif kind == MessageInfoType.Kind.Sticker:
-            return "😀"
-        elif kind == MessageInfoType.Kind.Link:
-            return "🔗"
-        else:
-            return "📌"
-
-
 class Storage:
-    MessageInfo = MessageInfoType
-
     # pinned messages
-    _pin_data  : Dict[int, List[MessageInfoType]]
+    _pin_data  : Dict[int, List[MessageInfo]]
     # msg_id of the bot's message with pins
     _editables : Dict[int, int]
     # whether someone wrote something to chat after bot's pin
@@ -111,10 +30,10 @@ class Storage:
 
     def has(self, chat_id : int) -> bool:
         return chat_id in self._pin_data and self._pin_data[chat_id] != []
-    def get(self, chat_id : int) -> List[MessageInfoType]:
+    def get(self, chat_id : int) -> List[MessageInfo]:
         return self._pin_data[chat_id]
 
-    def add(self, chat_id : int, msg : MessageInfoType) -> None:
+    def add(self, chat_id : int, msg : MessageInfo) -> None:
         if chat_id not in self._pin_data:
             self._pin_data[chat_id] = [msg]
         else:
@@ -146,7 +65,7 @@ class Storage:
         to_delete = min(all_bad)[1]
         del pins[to_delete]
 
-    def replace_same_id(self, chat_id : int, edited : MessageInfoType) -> None:
+    def replace_same_id(self, chat_id : int, edited : MessageInfo) -> None:
         if chat_id not in self._pin_data:
             return
         messages = self._pin_data[chat_id]
