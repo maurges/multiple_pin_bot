@@ -111,8 +111,15 @@ class Storage:
         # delete the special value
         redis.lrem(key, 0, special)
 
-    def replace_same_id(self, chat_id : int, msg : MessageInfoType) -> None:
-        pass
+    def replace_same_id(self, chat_id : int, edited : MessageInfoType) -> None:
+        redis = self._pins_db
+        key = str(chat_id)
+        dumps = redis.lrange(key, 0, -1)
+        value = edited.dumps()
+
+        for dump, index in zip(dumps, range(len(dumps))):
+            if json.loads(dump)['m_id'] == edited.m_id:
+                redis.lset(key, index, value)
 
 
     # get and set id of message that you need to edit
