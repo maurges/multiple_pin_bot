@@ -75,8 +75,6 @@ class MessageInfo:
                 chat_id = int(chat_s)
         return f"https://t.me/c/{chat_id}/{msg.message_id}"
 
-    @staticmethod
-
     # JSON methods
 
     def dumps(self) -> str:

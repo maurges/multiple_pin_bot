@@ -31,7 +31,7 @@ class Escaped:
 
 def gen_icon(kind : Kind) -> str:
     if kind == Kind.Text:
-        return "📌"
+        return "📝"
     elif kind == Kind.Photo:
         return "🖼"
     elif kind == Kind.File:
@@ -41,7 +41,7 @@ def gen_icon(kind : Kind) -> str:
     elif kind == Kind.Link:
         return "🔗"
     else:
-        return "📌"
+        return "📍"
 
 def gen_preview(msg : Message) -> Escaped:
     max_length = 280
