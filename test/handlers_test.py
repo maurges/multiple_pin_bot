@@ -9,7 +9,7 @@ import handlers
 import unittest
 import re
 from typing import *
-from random import randint
+from random import randint, choice
 from telegram import Message
 from datetime import datetime, timedelta
 from local_store import Storage
@@ -65,8 +65,11 @@ class Update:
             pass
 
     def __init__(self, msg : Optional[Message]
-                     , cb : Optional[CbQuery]) -> None:
+                , cb : Optional[CbQuery]
+                ,edited_message : Optional[Message] = None
+                ) -> None:
         self.message = msg
+        self.edited_message = edited_message
         if msg:
             self.message.pinned_message = copy(msg)
         self.callback_query = cb
@@ -303,3 +306,30 @@ class TestHandlers(unittest.TestCase):
 
         self.assertEqual(links[0], link1)
         self.assertEqual(links[1], link2)
+
+    def test_edits_update(self):
+        storage = self.get_storage()
+        bot = Bot()
+        pin_handler = handlers.pinned(storage)
+        edit_handler = handlers.message_edited(storage)
+
+        message_amount = 5
+        msgs = gen_same_chat_messages(message_amount)
+        upds = [Update(msg, None) for msg in msgs]
+        msg1, msg2 = choice(msgs), choice(msgs)
+
+        for update, number in zip(upds, range(message_amount)):
+            pin_handler(bot, update)
+
+        already_edited = message_amount - 1
+        self.assertEqual(len(bot.edited), already_edited)
+
+        upd1 = Update(msg1, None, msg1)
+        upd2 = Update(msg2, None, msg2)
+
+        edit_handler(bot, upd1)
+        self.assertEqual(len(bot.edited), already_edited + 1)
+        edit_handler(bot, upd2)
+        self.assertEqual(len(bot.edited), already_edited + 2)
+        edit_handler(bot, upd1)
+        self.assertEqual(len(bot.edited), already_edited + 3)
