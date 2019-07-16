@@ -41,7 +41,7 @@ def main(token : str) -> None:
     dp.add_handler(MessageHandler(edit_filter, handlers.edited(storage)))
     # catch any user message
     msg_filter = ~Filters.status_update
-    dp.add_handler(MessageHandler(msg_filter, handlers.message(storage)))
+    dp.add_handler(MessageHandler(msg_filter, handlers.message_edited(storage)))
 
     # Enable logging
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
