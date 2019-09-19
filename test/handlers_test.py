@@ -34,8 +34,14 @@ class HasIdName:
         self.last_name = None
         self.is_bot = False
 
+generated_number : int = 0
+def gen_number() -> int:
+    global generated_number
+    generated_number += 1000
+    return generated_number
+
 def gen_message() -> Message:
-    m_id = randint(0, 1<<31)
+    m_id = gen_number()
     chat = HasId(randint(0, 1<<63))
     user = HasIdName(randint(0, 1<<63), "mcnamington")
     time = rand_time(10)
