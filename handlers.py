@@ -78,17 +78,20 @@ def pinned(storage : Storage, bot, update):
                                        ,reply_markup=layout)
             sent_id = sent_msg.message_id
 
-            # delete old pin message
+            # remember the old message
             if has_editable:
-                try:
-                    old_msg = storage.get_message_id(chat_id)
-                    bot.delete_message(chat_id, old_msg)
-                except Exception as e:
-                    print(e)
+                old_msg = storage.get_message_id(chat_id)
 
             # remember the message for future edits
             storage.set_message_id(chat_id, sent_id)
             bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
+
+            #delete the old message
+            if has_editable:
+                try:
+                    bot.delete_message(chat_id, old_msg)
+                except Exception as e:
+                    print(e)
         else:
             msg_id = storage.get_message_id(chat_id)
             bot.edit_message_text(
