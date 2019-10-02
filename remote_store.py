@@ -59,7 +59,7 @@ class Storage:
 
         # calculate indicies to drop
         all_bad = [(abs(index - hint), index)
-                      for dump, index in zip(dumps, range(len(dumps)))
+                      for index, dump in enumerate(dumps)
                       if json.loads(dump)['m_id'] == m_id
                   ]
         if all_bad == []:

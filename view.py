@@ -142,7 +142,7 @@ class ButtonsStatus(Enum):
 def pins_post(pins, chat_id : int
              ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
              ) -> Tuple[str, InlineKeyboardMarkup]:
-    text = "\n\n".join(single_pin(pin, i + 1) for pin, i in zip(pins, range(len(pins))))
+    text = "\n\n".join(single_pin(pin, i + 1) for i, pin in enumerate(pins))
 
     # generate buttons for pin control
     button_all = InlineKeyboardButton(
@@ -174,10 +174,8 @@ def pins_post(pins, chat_id : int
         return f"{index + 1} {msg.icon}"
     cb_data = control.unpin_message_data
 
-    it1 = zip(pins, range(len(pins)))
-    it2 = zip(pins, range(len(pins)))
-    texts = (on_button(msg, index) for msg, index in it1)
-    cb_datas = (cb_data(msg, index) for msg, index in it2)
+    texts = (on_button(msg, index) for index, msg in enumerate(pins))
+    cb_datas = (cb_data(msg, index) for index, msg in enumerate(pins))
 
     buttons = [InlineKeyboardButton(text, callback_data=data)
                 for text, data in zip(texts, cb_datas)]
