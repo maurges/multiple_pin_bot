@@ -12,6 +12,7 @@ Author: d86leader@mail.com, 2019
 License: published under GNU GPL-3
 
 Description: functions to present data in chat
+The important ones are single_pin and pins_post
 """
 
 
@@ -54,6 +55,10 @@ def gen_preview(msg : Message) -> Escaped:
         return Escaped(msg.text[:max_length])
     elif msg.caption:
         return Escaped(msg.caption[:max_length])
+    elif msg.document:
+        return gather_file(msg.document)
+    elif msg.sticker:
+        return Escaped(msg.sticker.emoji)
     else:
         return Escaped("")
 
@@ -88,6 +93,9 @@ def gather_links(entities, text : str) -> Escaped:
     lines_str = map(str, lines)
     return Escaped.from_escaped("\n".join(lines_str))
 
+def gather_file(document) -> Escaped:
+    name_str = f"<b>{document.file_name}</b>"
+    return Escaped.from_escaped(name_str)
 
 
 def single_pin(msg_info, index) -> str:
@@ -130,7 +138,7 @@ class ButtonsStatus(Enum):
     Collapsed = 1
     Expanded = 2
 
-# used in two handlers above
+# used event handlers to generate view
 def pins_post(pins, chat_id : int
              ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
              ) -> Tuple[str, InlineKeyboardMarkup]:
