@@ -34,8 +34,14 @@ class HasIdName:
         self.last_name = None
         self.is_bot = False
 
+generated_number : int = 0
+def gen_number() -> int:
+    global generated_number
+    generated_number += 1000
+    return generated_number
+
 def gen_message() -> Message:
-    m_id = randint(0, 1<<31)
+    m_id = gen_number()
     chat = HasId(randint(0, 1<<63))
     user = HasIdName(randint(0, 1<<63), "mcnamington")
     time = rand_time(10)
@@ -115,6 +121,9 @@ class Bot:
                          ,'m_id'  : message_id
                          }]
 
+class Context:
+    def __init__(self, bot : Bot) -> None:
+        self.bot = bot
 
 """
 Main testing classes
@@ -127,6 +136,7 @@ class TestHandlers(unittest.TestCase):
     def test_pin_sends_and_edits(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
         pin_handler = handlers.pinned(storage)
 
         message_amount = 5
@@ -134,7 +144,7 @@ class TestHandlers(unittest.TestCase):
         upds = [Update(msg, None) for msg in msgs]
 
         for update in upds:
-            pin_handler(bot, update)
+            pin_handler(update, context)
 
         self.assertEqual(len(bot.pinned), message_amount)
         self.assertEqual(len(bot.sent), 1)
@@ -143,6 +153,7 @@ class TestHandlers(unittest.TestCase):
     def test_user_message_resends(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
         pin_handler = handlers.pinned(storage)
         message_handler = handlers.message(storage)
 
@@ -155,8 +166,8 @@ class TestHandlers(unittest.TestCase):
         user_update = Update(user_message, None)
 
         for update in upds:
-            pin_handler(bot, update)
-            message_handler(bot, user_update)
+            pin_handler(update, context)
+            message_handler(user_update, context)
 
         self.assertEqual(len(bot.pinned), message_amount)
         self.assertEqual(len(bot.sent), message_amount)
@@ -165,6 +176,7 @@ class TestHandlers(unittest.TestCase):
     def test_handlers_store(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
         pin_handler = handlers.pinned(storage)
         button_handler = handlers.button_pressed(storage)
 
@@ -179,27 +191,28 @@ class TestHandlers(unittest.TestCase):
         it = zip(msg_upds, unpin_upds, range(1, message_amount + 1))
 
         for pin_update, unpin_update, amount in it:
-            pin_handler(bot, pin_update)
+            pin_handler(pin_update, context)
             self.assertEqual(len(storage.get(chat_id)), amount)
 
-            button_handler(bot, unpin_update)
+            button_handler(unpin_update, context)
             self.assertEqual(len(storage.get(chat_id)), amount - 1)
             # test deleting non-existant
-            button_handler(bot, unpin_update)
+            button_handler(unpin_update, context)
             self.assertEqual(len(storage.get(chat_id)), amount - 1)
 
             #second add of deleted to keep amount increasing
-            pin_handler(bot, pin_update)
+            pin_handler(pin_update, context)
             self.assertEqual(len(storage.get(chat_id)), amount)
 
         unpin_all_cb = Update.CbQuery(msgs[0], handlers.UnpinAll)
         unpin_all_upd = Update(None, unpin_all_cb)
-        button_handler(bot, unpin_all_upd)
+        button_handler(unpin_all_upd, context)
         self.assertFalse(storage.has(chat_id))
 
     def test_keep_last(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
         pin_handler = handlers.pinned(storage)
         button_handler = handlers.button_pressed(storage)
 
@@ -209,12 +222,12 @@ class TestHandlers(unittest.TestCase):
         chat_id = msgs[0].chat.id
 
         for update, amount in zip(upds, range(1, message_amount + 1)):
-            pin_handler(bot, update)
+            pin_handler(update, context)
             self.assertEqual(len(storage.get(chat_id)), amount)
 
         keep_last_cb = Update.CbQuery(msgs[0], handlers.KeepLast)
         keep_last_upd = Update(None, keep_last_cb)
-        button_handler(bot, keep_last_upd)
+        button_handler(keep_last_upd, context)
 
         self.assertTrue(storage.has(chat_id))
         self.assertEqual(len(storage.get(chat_id)), 1)
@@ -222,6 +235,7 @@ class TestHandlers(unittest.TestCase):
     def test_deletes_on_nothing(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
 
         pin_handler = handlers.pinned(storage)
         button_handler = handlers.button_pressed(storage)
@@ -235,10 +249,10 @@ class TestHandlers(unittest.TestCase):
 
         chat_id = msgs[0].chat.id
         for pin_update in msg_upds:
-            pin_handler(bot, pin_update)
+            pin_handler(pin_update, context)
 
         for unpin_update in unpin_upds:
-            button_handler(bot, unpin_update)
+            button_handler(unpin_update, context)
 
         self.assertEqual(len(bot.deleted), 1)
         self.assertNotEqual(len(bot.sent), 0)
@@ -246,13 +260,14 @@ class TestHandlers(unittest.TestCase):
         self.assertEqual(bot.sent[0]['chat_id'], bot.deleted[0]['chat_id'])
 
         sent_first_batch = len(bot.sent)
-        button_handler(bot, unpin_upds[0])
+        button_handler(unpin_upds[0], context)
         self.assertEqual(len(bot.deleted), 1)
         self.assertEqual(len(bot.sent), sent_first_batch)
 
     def test_resending_deletes_old(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
         pin_handler = handlers.pinned(storage)
         message_handler = handlers.message(storage)
 
@@ -265,10 +280,10 @@ class TestHandlers(unittest.TestCase):
         user_update = Update(user_message, None)
 
         for update in upds:
-            pin_handler(bot, update)
+            pin_handler(update, context)
             sent = bot.sent[-1]
-            message_handler(bot, user_update)
-            pin_handler(bot, update)
+            message_handler(user_update, context)
+            pin_handler(update, context)
             deleted = bot.deleted[-1]
 
             self.assertEqual(sent['m_id'], deleted['m_id'])
@@ -277,6 +292,7 @@ class TestHandlers(unittest.TestCase):
     def test_gathers_correct_links(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
         pin_handler = handlers.pinned(storage)
 
         msg = gen_message()
@@ -298,7 +314,7 @@ class TestHandlers(unittest.TestCase):
         msg.text = "\n".join([link1, link2])
 
         update = Update(msg, None)
-        pin_handler(bot, update)
+        pin_handler(update, context)
 
         sent = bot.sent[-1]["text"]
         link_re = re.compile('<a href="([^"]+)">')
@@ -310,6 +326,7 @@ class TestHandlers(unittest.TestCase):
     def test_edits_update(self):
         storage = self.get_storage()
         bot = Bot()
+        context = Context(bot)
         pin_handler = handlers.pinned(storage)
         edit_handler = handlers.message_edited(storage)
 
@@ -319,7 +336,7 @@ class TestHandlers(unittest.TestCase):
         msg1, msg2 = choice(msgs), choice(msgs)
 
         for update, number in zip(upds, range(message_amount)):
-            pin_handler(bot, update)
+            pin_handler(update, context)
 
         already_edited = message_amount - 1
         self.assertEqual(len(bot.edited), already_edited)
@@ -327,9 +344,9 @@ class TestHandlers(unittest.TestCase):
         upd1 = Update(msg1, None, msg1)
         upd2 = Update(msg2, None, msg2)
 
-        edit_handler(bot, upd1)
+        edit_handler(upd1, context)
         self.assertEqual(len(bot.edited), already_edited + 1)
-        edit_handler(bot, upd2)
+        edit_handler(upd2, context)
         self.assertEqual(len(bot.edited), already_edited + 2)
-        edit_handler(bot, upd1)
+        edit_handler(upd1, context)
         self.assertEqual(len(bot.edited), already_edited + 3)

@@ -18,7 +18,7 @@ from remote_store import Storage
 
 
 def main(token : str) -> None:
-    updater = Updater(token)
+    updater = Updater(token, use_context=True)
     dp = updater.dispatcher
 
     storage = Storage()
@@ -38,10 +38,10 @@ def main(token : str) -> None:
     dp.add_handler(CallbackQueryHandler(handlers.button_pressed(storage)))
     # catch edited messages
     edit_filter = Filters.update.edited_message
-    dp.add_handler(MessageHandler(edit_filter, handlers.edited(storage)))
+    dp.add_handler(MessageHandler(edit_filter, handlers.message_edited(storage)))
     # catch any user message
     msg_filter = ~Filters.status_update
-    dp.add_handler(MessageHandler(msg_filter, handlers.message_edited(storage)))
+    dp.add_handler(MessageHandler(msg_filter, handlers.message(storage)))
 
     # Enable logging
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'

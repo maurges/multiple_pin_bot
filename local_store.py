@@ -56,7 +56,7 @@ class Storage:
         pins = self._pin_data[chat_id]
         # calculate indicies to drop
         all_bad = [(abs(index - hint), index)
-                      for msg, index in zip(pins, range(len(pins)))
+                      for index, msg in enumerate(pins)
                       if msg.m_id == m_id
                   ]
         if all_bad == []:

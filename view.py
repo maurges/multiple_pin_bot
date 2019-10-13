@@ -12,6 +12,7 @@ Author: d86leader@mail.com, 2019
 License: published under GNU GPL-3
 
 Description: functions to present data in chat
+The important ones are single_pin and pins_post
 """
 
 
@@ -54,6 +55,10 @@ def gen_preview(msg : Message) -> Escaped:
         return Escaped(msg.text[:max_length])
     elif msg.caption:
         return Escaped(msg.caption[:max_length])
+    elif msg.document:
+        return gather_file(msg.document)
+    elif msg.sticker:
+        return Escaped(msg.sticker.emoji)
     else:
         return Escaped("")
 
@@ -88,6 +93,9 @@ def gather_links(entities, text : str) -> Escaped:
     lines_str = map(str, lines)
     return Escaped.from_escaped("\n".join(lines_str))
 
+def gather_file(document) -> Escaped:
+    name_str = f"<b>{document.file_name}</b>"
+    return Escaped.from_escaped(name_str)
 
 
 def single_pin(msg_info, index) -> str:
@@ -130,11 +138,11 @@ class ButtonsStatus(Enum):
     Collapsed = 1
     Expanded = 2
 
-# used in two handlers above
+# used event handlers to generate view
 def pins_post(pins, chat_id : int
              ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
              ) -> Tuple[str, InlineKeyboardMarkup]:
-    text = "\n\n".join(single_pin(pin, i + 1) for pin, i in zip(pins, range(len(pins))))
+    text = "\n\n".join(single_pin(pin, i + 1) for i, pin in enumerate(pins))
 
     # generate buttons for pin control
     button_all = InlineKeyboardButton(
@@ -166,10 +174,8 @@ def pins_post(pins, chat_id : int
         return f"{index + 1} {msg.icon}"
     cb_data = control.unpin_message_data
 
-    it1 = zip(pins, range(len(pins)))
-    it2 = zip(pins, range(len(pins)))
-    texts = (on_button(msg, index) for msg, index in it1)
-    cb_datas = (cb_data(msg, index) for msg, index in it2)
+    texts = (on_button(msg, index) for index, msg in enumerate(pins))
+    cb_datas = (cb_data(msg, index) for index, msg in enumerate(pins))
 
     buttons = [InlineKeyboardButton(text, callback_data=data)
                 for text, data in zip(texts, cb_datas)]

@@ -1,7 +1,8 @@
 #!/usr/bin/env/python3
 
 from typing import *
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import CallbackContext
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from local_store import Storage
 from enum import Enum
 from control import parse_unpin_data
@@ -33,10 +34,10 @@ def curry(func):
     return curried1
 
 
-def start(bot, update):
+def start(update : Update, context : CallbackContext):
     update.message.reply_text("Hi!")
 
-def help(bot, update):
+def help(update : Update, context : CallbackContext):
     help_msg = """
 Just pin a message and it will be added to the pinned list.
 You can then remove a message just by pressing a button.
@@ -49,16 +50,18 @@ I'm a bot, see my github in the link above. If you want to use this bot in your 
     update.message.reply_text(help_msg)
 
 @curry
-def error(logger, bot, update, err):
-    logger.warning(f"Update '{update}' caused error: {err}")
+def error(logger, update : Update, context : CallbackContext):
+    logger.warning(f"Update '{update}' caused error: {context.error}")
 
 
 @curry
-def pinned(storage : Storage, bot, update):
+def pinned(storage : Storage, update : Update, context : CallbackContext):
     if update.message.from_user.is_bot:
         return
     if pin_from_self(storage, update):
         return
+
+    bot = context.bot
 
     chat_id = update.message.chat_id
     with chat_lock.lock(chat_id):
@@ -70,16 +73,8 @@ def pinned(storage : Storage, bot, update):
         send_message(storage, bot, chat_id)
 
 @curry
-def edited(storage : Storage, bot, update):
-    chat_id = update.edited_message.chat_id
-    with chat_lock.lock(chat_id):
-        msg_info = MessageInfo(update.edited_message)
-        storage.replace_same_id(chat_id, msg_info)
-        print("replaced with")
-        send_message(storage, bot, chat_id)
-
-@curry
-def button_pressed(storage : Storage, bot, update):
+def button_pressed(storage : Storage, update : Update, context : CallbackContext):
+    bot = context.bot
     cb = update.callback_query
     cb.answer("")
     chat_id = cb.message.chat_id
@@ -121,7 +116,7 @@ def button_pressed(storage : Storage, bot, update):
             )
 
 @curry
-def message_edited(storage : Storage, bot, update):
+def message_edited(storage : Storage, update : Update, context : CallbackContext):
     edited = update.edited_message
     chat_id = edited.chat_id
 
@@ -134,17 +129,21 @@ def message_edited(storage : Storage, bot, update):
     storage.replace_same_id(chat_id, msg)
 
     text, layout = gen_post(storage, chat_id)
-    bot.edit_message_text(
-        chat_id       = chat_id
-        ,message_id   = msg_id
-        ,text         = text
-        ,parse_mode   = "HTML"
-        ,reply_markup = layout
-        )
+    try:
+        # may fail if message too old, but it doesn't really matter in that case
+        context.bot.edit_message_text(
+            chat_id       = chat_id
+            ,message_id   = msg_id
+            ,text         = text
+            ,parse_mode   = "HTML"
+            ,reply_markup = layout
+            )
+    except Exception as e:
+        print(e)
 
 
 @curry
-def message(storage : Storage, bot, update):
+def message(storage : Storage, update : Update, context : CallbackContext):
     # this is in this `if` statement because current api version doesn't
     # support a filter like this, even thought docs say it does
     if update.message and update.message.chat_id:
@@ -167,14 +166,20 @@ def send_message(storage : Storage, bot, chat_id : int) -> None:
                                    ,reply_markup=layout)
         sent_id = sent_msg.message_id
 
-        # delete old pin message
+        # remember the message for future edits
         if has_editable:
             old_msg = storage.get_message_id(chat_id)
-            bot.delete_message(chat_id, old_msg)
 
         # remember the message for future edits
         storage.set_message_id(chat_id, sent_id)
         bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
+
+        # delete old pin message
+        if has_editable:
+            try:
+                bot.delete_message(chat_id, old_msg)
+            except Exception as e:
+                print(e)
     else:
         msg_id = storage.get_message_id(chat_id)
         bot.edit_message_text(
