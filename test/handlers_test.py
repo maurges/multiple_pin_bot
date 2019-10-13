@@ -33,6 +33,12 @@ class HasIdName:
         self.first_name = name
         self.last_name = None
         self.is_bot = False
+class HasPermissionPin:
+    def __init__(self, can : bool) -> None:
+        self.can_pin_messages = can
+class HasPermissions:
+    def __init__(self, permissions : HasPermissionPin) -> None:
+        self.permissions = permissions
 
 generated_number : int = 0
 def gen_number() -> int:
@@ -67,6 +73,7 @@ class Update:
         def __init__(self, message : Message, data : str) -> None:
             self.message = message
             self.data = data
+            self.from_user = message.from_user
         def answer(self, s : str) -> None:
             pass
 
@@ -120,6 +127,10 @@ class Bot:
         self.deleted += [{'chat_id' : chat_id
                          ,'m_id'  : message_id
                          }]
+    def get_chat(self, chat_id) -> HasPermissions:
+        return HasPermissions(HasPermissionPin(True))
+    def get_chat_member(self, chat_id, used_id) -> HasPermissionPin:
+        return HasPermissionPin(None)
 
 class Context:
     def __init__(self, bot : Bot) -> None:

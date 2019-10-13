@@ -2,7 +2,7 @@
 
 from typing import *
 from telegram.ext import CallbackContext
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User
 from local_store import Storage
 from enum import Enum
 from control import parse_unpin_data
@@ -84,6 +84,9 @@ def button_pressed(storage : Storage, update : Update, context : CallbackContext
         if not storage.has_message_id(chat_id):
             return
         msg_id = storage.get_message_id(chat_id)
+
+        if not allowed_to_pin(bot, chat_id, cb.from_user):
+            return
 
         # default status of response buttons. May be changed in handling below
         response_buttons = ButtonsStatus.Collapsed
@@ -212,4 +215,19 @@ def pin_from_self(storage, update) -> bool:
     if old_msg_id == msg.message_id:
         return True
 
+    return False
+
+def allowed_to_pin(bot, chat_id : int, user : User) -> bool:
+    chat = bot.get_chat(chat_id)
+    everyone_pins = chat.permissions.can_pin_messages
+    member = bot.get_chat_member(chat_id, user.id)
+    user_pins = member.can_pin_messages
+
+    if everyone_pins and user_pins != False:
+        return True
+    if not everyone_pins and user_pins == True:
+        return True
+    # creator doesn't have normal permission fields
+    if member.status == "creator":
+        return True
     return False
