@@ -23,8 +23,3 @@ Then you put this token into `token.txt` file in the root directory of this proj
 Then you run `python3 main.py`, and your bot is up and operating.
 
 Add the bot to supergroup and make him an admin to see him work.
-
-## Editing messages
-
-Current API version 11.something does not support filtering for message editing.
-So we have to wait for API 12.0 to have this.
