@@ -18,7 +18,7 @@ from remote_store import Storage
 
 
 def main(token : str) -> None:
-    updater = Updater(token)
+    updater = Updater(token, use_context=True)
     dp = updater.dispatcher
 
     storage = Storage()
