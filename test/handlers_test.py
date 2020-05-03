@@ -46,12 +46,12 @@ def gen_number() -> int:
     generated_number += 1000
     return generated_number
 
-def gen_message() -> Message:
+def gen_message(time_delta = 10) -> Message:
     m_id = gen_number()
     chat = HasId(randint(0, 1<<63))
     name = choice(["mcnamington", "kekowski", "john", "IDIOT"])
-    user = HasIdName(randint(0, 1<<63), "mcnamington")
-    time = rand_time(10)
+    user = HasIdName(randint(0, 1<<63), name)
+    time = rand_time(time_delta)
     text = choice([ "four score and twenty years ago"
                   , "textitty"
                   , "whatever kid"
