@@ -17,27 +17,27 @@ from threading import Lock
 from typing import Dict, Any
 
 class VarLock:
-    _locks : Dict[Any, Lock]
-    _ack_lock : Lock
+    _locks: Dict[Any, Lock]
+    _ack_lock: Lock
 
     def __init__(self) -> None:
         self._locks = {}
         self._ack_lock = Lock()
 
-    def acquire(self, var : Any, *args, **kwargs) -> bool:
+    def acquire(self, var: Any, *args, **kwargs) -> bool:
         with self._ack_lock:
             if var not in self._locks:
                 self._locks[var] = Lock()
         return self._locks[var].acquire(*args, **kwargs)
 
-    def release(self, var : Any) -> None:
+    def release(self, var: Any) -> None:
         with self._ack_lock:
             if var not in self._locks:
                 raise RuntimeError("Attempting to release an unlocked lock")
         self._locks[var].release()
 
     # to be used in with statements
-    def lock(self, var : Any) -> Lock:
+    def lock(self, var: Any) -> Lock:
         with self._ack_lock:
             if var not in self._locks:
                 self._locks[var] = Lock()

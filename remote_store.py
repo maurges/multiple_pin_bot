@@ -25,34 +25,34 @@ class Storage:
         self._no_user_wrote = Redis(host=addr, port=port, db=2)
 
 
-    def has(self, chat_id : int) -> bool:
+    def has(self, chat_id: int) -> bool:
         redis = self._pins_db
         key = str(chat_id)
         return redis.llen(key) != 0
 
-    def get(self, chat_id : int) -> List[MessageInfo]:
+    def get(self, chat_id: int) -> List[MessageInfo]:
         redis = self._pins_db
         key = str(chat_id)
         dumps = redis.lrange(key, 0, -1)
         return list(map(MessageInfo.loads, dumps))
 
-    def add(self, chat_id : int, msg : MessageInfo) -> None:
+    def add(self, chat_id: int, msg: MessageInfo) -> None:
         redis = self._pins_db
         key = str(chat_id)
         value = msg.dumps()
         redis.lpush(key, value)
 
-    def clear(self, chat_id : int) -> None:
+    def clear(self, chat_id: int) -> None:
         redis = self._pins_db
         key = str(chat_id)
         redis.delete(key)
 
-    def clear_keep_last(self, chat_id : int) -> None:
+    def clear_keep_last(self, chat_id: int) -> None:
         redis = self._pins_db
         key = str(chat_id)
         redis.ltrim(key, 0, 0)
 
-    def remove(self, chat_id : int, m_id : int, hint : int = 0) -> None:
+    def remove(self, chat_id: int, m_id: int, hint: int = 0) -> None:
         redis = self._pins_db
         key = str(chat_id)
         dumps = redis.lrange(key, 0, -1)
@@ -72,7 +72,7 @@ class Storage:
         # delete the special value
         redis.lrem(key, 0, special)
 
-    def replace_same_id(self, chat_id : int, edited : MessageInfo) -> None:
+    def replace_same_id(self, chat_id: int, edited: MessageInfo) -> None:
         redis = self._pins_db
         key = str(chat_id)
         dumps = redis.lrange(key, 0, -1)
@@ -84,32 +84,32 @@ class Storage:
 
 
     # get and set id of message that you need to edit
-    def get_message_id(self, chat_id : int) -> int:
+    def get_message_id(self, chat_id: int) -> int:
         redis = self._editables_db
         key = str(chat_id)
         return int(redis.get(key))
-    def set_message_id(self, chat_id : int, m_id : int) -> None:
+    def set_message_id(self, chat_id: int, m_id: int) -> None:
         redis = self._editables_db
         key = str(chat_id)
         val = str(m_id)
         redis.set(key, val)
         # automatically set that no user has messaged us
         self._no_user_wrote.set(key, ".")
-    def has_message_id(self, chat_id : int) -> bool:
+    def has_message_id(self, chat_id: int) -> bool:
         redis = self._editables_db
         key = str(chat_id)
         return redis.get(key) is not None
-    def remove_message_id(self, chat_id : int) -> None:
+    def remove_message_id(self, chat_id: int) -> None:
         redis = self._editables_db
         key = str(chat_id)
         redis.delete(key)
 
     # status of last message
-    def did_user_message(self, chat_id : int) -> bool:
+    def did_user_message(self, chat_id: int) -> bool:
         redis = self._no_user_wrote
         key = str(chat_id)
         return redis.get(key) is None
-    def user_message_added(self, chat_id : int) -> None:
+    def user_message_added(self, chat_id: int) -> None:
         redis = self._no_user_wrote
         key = str(chat_id)
         redis.delete(key)

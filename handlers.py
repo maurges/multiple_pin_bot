@@ -1,8 +1,10 @@
 #!/usr/bin/env/python3
 
 from typing import *
-from telegram.ext import CallbackContext
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, User
+from telegram.ext import CallbackContext # type: ignore
+from telegram import ( InlineKeyboardButton, InlineKeyboardMarkup # type: ignore
+                     , Update, User
+                     )
 from local_store import Storage
 from enum import Enum
 from control import parse_unpin_data
@@ -34,10 +36,10 @@ def curry(func):
     return curried1
 
 
-def start(update : Update, context : CallbackContext):
+def start(update: Update, context: CallbackContext):
     update.message.reply_text("Hi!")
 
-def help(update : Update, context : CallbackContext):
+def help(update: Update, context: CallbackContext):
     help_msg = """
 Just pin a message and it will be added to the pinned list.
 You can then remove a message just by pressing a button.
@@ -50,12 +52,12 @@ I'm a bot, see my github in the link above. If you want to use this bot in your 
     update.message.reply_text(help_msg)
 
 @curry
-def error(logger, update : Update, context : CallbackContext):
+def error(logger, update: Update, context: CallbackContext):
     logger.warning(f"Update '{update}' caused error: {context.error}")
 
 
 @curry
-def pinned(storage : Storage, update : Update, context : CallbackContext):
+def pinned(storage: Storage, update: Update, context: CallbackContext):
     if update.message.from_user.is_bot:
         return
     if pin_from_self(storage, update):
@@ -73,7 +75,7 @@ def pinned(storage : Storage, update : Update, context : CallbackContext):
         send_message(storage, bot, chat_id)
 
 @curry
-def button_pressed(storage : Storage, update : Update, context : CallbackContext):
+def button_pressed(storage: Storage, update: Update, context: CallbackContext):
     bot = context.bot
     cb = update.callback_query
     cb.answer("")
@@ -119,7 +121,7 @@ def button_pressed(storage : Storage, update : Update, context : CallbackContext
             )
 
 @curry
-def message_edited(storage : Storage, update : Update, context : CallbackContext):
+def message_edited(storage: Storage, update: Update, context: CallbackContext):
     edited = update.edited_message
     chat_id = edited.chat_id
 
@@ -133,7 +135,7 @@ def message_edited(storage : Storage, update : Update, context : CallbackContext
 
     text, layout = gen_post(storage, chat_id)
     try:
-        # may fail if message too old, but it doesn't really matter in that case
+        #may fail if message too old, but it doesn't really matter in that case
         context.bot.edit_message_text(
             chat_id       = chat_id
             ,message_id   = msg_id
@@ -146,7 +148,7 @@ def message_edited(storage : Storage, update : Update, context : CallbackContext
 
 
 @curry
-def message(storage : Storage, update : Update, context : CallbackContext):
+def message(storage: Storage, update: Update, context: CallbackContext):
     # this is in this `if` statement because current api version doesn't
     # support a filter like this, even thought docs say it does
     if update.message and update.message.chat_id:
@@ -156,7 +158,7 @@ def message(storage : Storage, update : Update, context : CallbackContext):
 
 
 # this function never deletes a message
-def send_message(storage : Storage, bot, chat_id : int) -> None:
+def send_message(storage: Storage, bot, chat_id: int) -> None:
     text, layout = gen_post(storage, chat_id)
 
     new_message = storage.did_user_message(chat_id)
@@ -195,8 +197,8 @@ def send_message(storage : Storage, bot, chat_id : int) -> None:
         # also repin bot's message
         bot.pin_chat_message(chat_id, msg_id, disable_notification=True)
 
-def gen_post(storage, chat_id : int
-            ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
+def gen_post(storage, chat_id: int
+            ,button_status: ButtonsStatus = ButtonsStatus.Collapsed
             ) -> Tuple[str, InlineKeyboardMarkup]:
     if not storage.has(chat_id):
         return view.EmptyPost
@@ -217,7 +219,7 @@ def pin_from_self(storage, update) -> bool:
 
     return False
 
-def allowed_to_pin(bot, chat_id : int, user : User) -> bool:
+def allowed_to_pin(bot, chat_id: int, user: User) -> bool:
     chat = bot.get_chat(chat_id)
     everyone_pins = chat.permissions.can_pin_messages
     member = bot.get_chat_member(chat_id, user.id)

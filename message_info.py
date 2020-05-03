@@ -17,13 +17,13 @@ Also this structure is json-serializable through special methods.
 """
 
 class MessageInfo:
-    m_id    : int
-    kind    : Kind
-    link    : str
-    sender  : Escaped
-    icon    : str
-    preview : Escaped
-    date    : datetime
+    m_id:    int
+    kind:    Kind
+    link:    str
+    sender:  Escaped
+    icon:    str
+    preview: Escaped
+    date:    datetime
 
     def __init__(self, msg) -> None:
         if msg is None:
@@ -90,7 +90,7 @@ class MessageInfo:
         return json.dumps(self_dict)
 
     @staticmethod
-    def loads(text : Union[str, bytes]) -> 'MessageInfo':
+    def loads(text: Union[str, bytes]) -> 'MessageInfo':
         dict = json.loads(text)
         self = MessageInfo(None)
 

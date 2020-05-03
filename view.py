@@ -2,10 +2,15 @@
 
 from typing import *
 from html import escape
-from telegram import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import ( Message, InlineKeyboardMarkup # type: ignore
+                     , InlineKeyboardButton
+                     )
 from enum import Enum
 from message_kind import Kind
 import control
+import message_info
+
+MessageInfo = message_info.MessageInfo
 
 """
 Author: d86leader@mail.com, 2019
@@ -18,11 +23,11 @@ The important ones are single_pin and pins_post
 
 # a wrapper class: the wrapped string is html-escaped
 class Escaped:
-    wrapped : str
-    def __init__(self, s : str) -> None:
+    wrapped: str
+    def __init__(self, s: str) -> None:
         self.wrapped = escape(s)
     @staticmethod
-    def from_escaped(s : str) -> 'Escaped':
+    def from_escaped(s: str) -> 'Escaped':
         self = Escaped("")
         self.wrapped = s
         return self
@@ -30,7 +35,7 @@ class Escaped:
         return self.wrapped
 
 
-def gen_icon(kind : Kind) -> str:
+def gen_icon(kind: Kind) -> str:
     if kind == Kind.Text:
         return "📝"
     elif kind == Kind.Photo:
@@ -44,7 +49,7 @@ def gen_icon(kind : Kind) -> str:
     else:
         return "📍"
 
-def gen_preview(msg : Message) -> Escaped:
+def gen_preview(msg: Message) -> Escaped:
     max_length = 280
 
     if msg.entities != [] and has_links_in(msg.entities):
@@ -66,15 +71,15 @@ def is_link(entity):
     return entity.type == "url" or entity.type == "text_link"
 def has_links_in(entities) -> bool:
     return any(map(is_link, entities))
-def link_text(entity, all_text : str) -> Escaped:
-    start : int = entity.offset
-    end : int = start + entity.length
+def link_text(entity, all_text: str) -> Escaped:
+    start: int = entity.offset
+    end: int = start + entity.length
     return Escaped(all_text[start : end])
-def make_link(href : Escaped, body : Escaped) -> Escaped:
+def make_link(href: Escaped, body: Escaped) -> Escaped:
     return Escaped.from_escaped(f'<a href="{href}">{body}</a>')
 
-def gather_links(entities, text : str) -> Escaped:
-    lines : List[Escaped] = []
+def gather_links(entities, text: str) -> Escaped:
+    lines: List[Escaped] = []
     for ent in entities:
         if ent.url:
             # manual says this only works for "text_link", but i say if it has
@@ -98,8 +103,8 @@ def gather_file(document) -> Escaped:
     return Escaped.from_escaped(name_str)
 
 
-def single_pin(msg_info, index) -> str:
-    lines : List[str] = []
+def single_pin(msg_info: MessageInfo, index) -> str:
+    lines: List[str] = []
     head_icon = "🏷"
 
     # first line: preview
@@ -128,7 +133,7 @@ def single_pin(msg_info, index) -> str:
     return "\n".join(lines)
 
 
-EmptyPost : Tuple[str, InlineKeyboardMarkup] =(
+EmptyPost: Tuple[str, InlineKeyboardMarkup] = (
     "No pins", InlineKeyboardMarkup([[]])
 )
 
@@ -139,8 +144,8 @@ class ButtonsStatus(Enum):
     Expanded = 2
 
 # used event handlers to generate view
-def pins_post(pins, chat_id : int
-             ,button_status : ButtonsStatus = ButtonsStatus.Collapsed
+def pins_post(pins, chat_id: int
+             ,button_status: ButtonsStatus = ButtonsStatus.Collapsed
              ) -> Tuple[str, InlineKeyboardMarkup]:
     text = "\n\n".join(single_pin(pin, i + 1) for i, pin in enumerate(pins))
 
@@ -189,7 +194,7 @@ def pins_post(pins, chat_id : int
     return (text, InlineKeyboardMarkup(layout))
 
 # choose the best way to split buttons between lines
-def best_split(amount : int) -> int:
+def best_split(amount: int) -> int:
     best_per_line = 5
     if amount < best_per_line:
         return amount

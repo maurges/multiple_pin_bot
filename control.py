@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from typing import *
-from telegram import Message
+from telegram import Message # type: ignore
 
 """
 Author: d86leader@mail.com, 2019
@@ -16,10 +16,10 @@ KeepLast = "$$LAST"
 ButtonsExpand = "$$EXPAND"
 ButtonsCollapse = "$$COLLAPSE"
 
-def unpin_message_data(msg : Message, index : int) -> str:
+def unpin_message_data(msg: Message, index: int) -> str:
     return f"{str(msg.m_id)}:{index}"
 
 # for data packed with function above: retrieve id and index
-def parse_unpin_data(data : str) -> Tuple[int, int]:
+def parse_unpin_data(data: str) -> Tuple[int, int]:
     id, index = map(int, data.split(':'))
     return (id, index)
