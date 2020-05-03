@@ -10,7 +10,7 @@ import unittest
 import re
 from typing import *
 from random import randint, choice
-from telegram import Message
+from telegram import Message # type: ignore
 from datetime import datetime, timedelta
 from local_store import Storage
 from copy import copy
@@ -34,7 +34,7 @@ class HasIdName:
         self.last_name = None
         self.is_bot = False
 class HasPermissionPin:
-    def __init__(self, can : bool) -> None:
+    def __init__(self, can : Optional[bool]) -> None:
         self.can_pin_messages = can
 class HasPermissions:
     def __init__(self, permissions : HasPermissionPin) -> None:
@@ -49,9 +49,15 @@ def gen_number() -> int:
 def gen_message() -> Message:
     m_id = gen_number()
     chat = HasId(randint(0, 1<<63))
+    name = choice(["mcnamington", "kekowski", "john", "IDIOT"])
     user = HasIdName(randint(0, 1<<63), "mcnamington")
     time = rand_time(10)
-    return Message(m_id, user, time, chat, text="textitty")
+    text = choice([ "four score and twenty years ago"
+                  , "textitty"
+                  , "whatever kid"
+                  , "fourty thousand people used to live here, now it's a ghost town"
+                  ])
+    return Message(m_id, user, time, chat, text=text)
 
 def inc_msg_id(msg : Message, amount : int) -> Message:
     r = copy(msg)
@@ -83,7 +89,7 @@ class Update:
                 ) -> None:
         self.message = msg
         self.edited_message = edited_message
-        if msg:
+        if self.message is not None:
             self.message.pinned_message = copy(msg)
         self.callback_query = cb
 
@@ -131,6 +137,13 @@ class Bot:
         return HasPermissions(HasPermissionPin(True))
     def get_chat_member(self, chat_id, used_id) -> HasPermissionPin:
         return HasPermissionPin(None)
+
+class Entity:
+    def __init__(self, start, length):
+        self.offset = start
+        self.length = length
+        self.type = "url"
+        self.url = None
 
 class Context:
     def __init__(self, bot : Bot) -> None:
@@ -307,12 +320,6 @@ class TestHandlers(unittest.TestCase):
         pin_handler = handlers.pinned(storage)
 
         msg = gen_message()
-        class Entity:
-            def __init__(self, start, length):
-                self.offset = start
-                self.length = length
-                self.type = "url"
-                self.url = None
 
         link1 = "github.com"
         link2 = "https://kde.org/"
