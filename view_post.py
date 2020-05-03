@@ -35,8 +35,8 @@ def single_pin(msg_info: MessageInfo, index) -> str:
     # second line - header line: icon, sender and date and index
     time_str = msg_info.date.strftime("%Y-%m-%d")
     weekday = msg_info.date.strftime("%a")
-    header_line =  f"{head_icon}"
-    header_line += f' <a href="{msg_info.link}">'
+    header_line =  f'<a href="{msg_info.link}">'
+    header_line += f"{head_icon} "
     header_line += f"[{index}] {time_str}"
     header_line += "</a>"
     header_line += "<i>"

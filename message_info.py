@@ -54,9 +54,15 @@ def gen_preview(msg: Message) -> Escaped:
     elif msg.caption_entities != [] and has_links_in(msg.caption_entities):
         return gather_links(msg.caption_entities, msg.caption)
     elif msg.text:
-        return Escaped(msg.text[:MaxLength] + "...")
+        if len(msg.text) > MaxLength:
+            return Escaped(msg.text[:MaxLength] + "...")
+        else:
+            return Escaped(msg.text)
     elif msg.caption:
-        return Escaped(msg.caption[:MaxLength] + "...")
+        if len(msg.caption) > MaxLength:
+            return Escaped(msg.caption[:MaxLength] + "...")
+        else:
+            return Escaped(msg.caption)
     elif msg.document:
         return gather_file(msg.document)
     elif msg.sticker:
