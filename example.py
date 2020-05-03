@@ -42,7 +42,7 @@ def main(token: str) -> None:
 
         # message with links
         for _ in range(randint(5, 7)):
-            msg = test.gen_message()
+            msg = test.gen_message(60*60*24*30)
             if choice([True, False]):
                 # link message
                 link = choice(["github.com", "https://kde.org/"])

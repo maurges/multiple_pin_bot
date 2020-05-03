@@ -20,29 +20,28 @@ The important ones are single_pin and pins_post
 
 def single_pin(msg_info: MessageInfo, index) -> str:
     lines: List[str] = []
-    head_icon = "🏷"
+    head_icon = "📌"
 
     # first line: preview
     preview_line = ""
-    if len(msg_info.preview.wrapped) == 0:
+    # these require disambiguation with icon
+    visual_kind = msg_info.kind in [Kind.Photo, Kind.File]
+    if len(msg_info.preview.wrapped) == 0 or visual_kind:
         # populate it with icon
-        preview_line = f"{msg_info.icon}"
-    else:
-        preview_line += msg_info.preview.wrapped
-        # add icon to disambiguate text from file or photo
-        if msg_info.kind in [Kind.Photo, Kind.File]:
-            preview_line += f" {msg_info.icon}"
+        preview_line += f"{msg_info.icon} "
+    preview_line += msg_info.preview.wrapped
     lines += [preview_line]
 
     # second line - header line: icon, sender and date and index
-    time_str = msg_info.date.strftime("%A, %d %B %Y")
+    time_str = msg_info.date.strftime("%Y-%m-%d")
+    weekday = msg_info.date.strftime("%a")
     header_line =  f"{head_icon}"
-    header_line += "<i>"
-    header_line += f" {escape(msg_info.sender.wrapped)},"
-    header_line += "</i>"
     header_line += f' <a href="{msg_info.link}">'
-    header_line += f"{time_str} [{index}]"
+    header_line += f"[{index}] {time_str}"
     header_line += "</a>"
+    header_line += "<i>"
+    header_line += f" - {escape(msg_info.sender.wrapped)}, {weekday}"
+    header_line += "</i>"
     lines += [header_line]
 
     return "\n".join(lines)

@@ -4,7 +4,7 @@ from typing import *
 from datetime import datetime
 from html import escape
 from message_kind import Kind
-from telegram import Message # type: ignore
+from telegram import Message, MessageEntity # type: ignore
 import message_kind
 import json
 
@@ -16,6 +16,9 @@ Desctiption: structure with essential message data
 and methods for generating it from tg message.
 Also this structure is json-serializable through special methods.
 """
+
+
+MaxLength = 280
 
 # a wrapper class: the wrapped string is html-escaped
 class Escaped:
@@ -46,16 +49,14 @@ def gen_icon(kind: Kind) -> str:
         return "📍"
 
 def gen_preview(msg: Message) -> Escaped:
-    max_length = 280
-
     if msg.entities != [] and has_links_in(msg.entities):
         return gather_links(msg.entities, msg.text)
     elif msg.caption_entities != [] and has_links_in(msg.caption_entities):
         return gather_links(msg.caption_entities, msg.caption)
     elif msg.text:
-        return Escaped(msg.text[:max_length])
+        return Escaped(msg.text[:MaxLength] + "...")
     elif msg.caption:
-        return Escaped(msg.caption[:max_length])
+        return Escaped(msg.caption[:MaxLength] + "...")
     elif msg.document:
         return gather_file(msg.document)
     elif msg.sticker:
@@ -74,25 +75,67 @@ def link_text(entity, all_text: str) -> Escaped:
 def make_link(href: Escaped, body: Escaped) -> Escaped:
     return Escaped.from_escaped(f'<a href="{href}">{body}</a>')
 
+class MessagePart(NamedTuple):
+    """Used to get links from messages and join all together"""
+    text_repr: Escaped
+    repr_length: int
+    start: int
+
 def gather_links(entities, text: str) -> Escaped:
-    lines: List[Escaped] = []
+    # start and end of entity
+    ent_parts: List[MessagePart] = []
+    # assertion: no entities overlap
+
     for ent in entities:
         if ent.url:
             # manual says this only works for "text_link", but i say if it has
             # url, that must be a correct url
             body = link_text(ent, text)
             url = Escaped(ent.url)
-            lines.append(make_link(url, body))
+            part = MessagePart( text_repr = make_link(url, body)
+                              , repr_length = len(body.wrapped)
+                              , start = ent.offset
+                              )
+            ent_parts.append(part)
         elif is_link(ent):
             # it's a text_link or url, but doesn't have an own url. Extract one
             # from text body
             href = link_text(ent, text)
-            lines.append(make_link(href, href))
+            part = MessagePart( text_repr = make_link(href, href)
+                              , repr_length = len(href.wrapped)
+                              , start = ent.offset
+                              )
+            ent_parts.append(part)
         else:
             continue
-    # unwrap lines, join them and wrap again
-    lines_str = map(str, lines)
-    return Escaped.from_escaped("\n".join(lines_str))
+    ent_parts.sort(key = lambda x: x.start)
+
+    result = ""
+    cur_start = 0
+    too_long = False
+    for ent in ent_parts:
+        if not too_long:
+            cur_text = text[cur_start : ent.start]
+            result += cur_text
+            if len(result) > MaxLength:
+                result = result[:MaxLength].strip() + "...\n"
+                too_long = True
+            result += ent.text_repr.wrapped
+            if len(result) > MaxLength:
+                # if became too long after adding link, we shouldn't cut
+                result = result.strip()
+                too_long = True
+            cur_start = ent.start + ent.repr_length
+        else:
+            result += "\n" + ent.text_repr.wrapped
+    if len(result) <= MaxLength:
+        # append last text
+        cur_text = text[cur_start:]
+        result += Escaped(cur_text).wrapped
+        if len(result) + len(cur_text) > MaxLength:
+            result = result[:MaxLength].strip() + "..."
+
+    return Escaped.from_escaped(result)
 
 def gather_file(document) -> Escaped:
     name_str = f"<b>{document.file_name}</b>"
