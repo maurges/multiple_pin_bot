@@ -1,5 +1,6 @@
 #!/usr/bin/env/python3
 
+import traceback
 from typing import *
 from telegram.ext import CallbackContext # type: ignore
 from telegram import ( InlineKeyboardButton, InlineKeyboardMarkup # type: ignore
@@ -106,9 +107,13 @@ def button_pressed(storage: Storage, update: Update, context: CallbackContext):
 
         text, layout = gen_post(storage, chat_id, response_buttons)
         if (text, layout) == EmptyPost:
-            bot.unpin_chat_message(chat_id, msg_id)
-            bot.delete_message(chat_id, msg_id)
-            storage.remove_message_id(chat_id)
+            try:
+                bot.unpin_chat_message(chat_id, msg_id)
+                bot.delete_message(chat_id, msg_id)
+                storage.remove_message_id(chat_id)
+            except Exception as e:
+                tb = traceback.format_exc()
+                print(tb)
             return
 
         bot.edit_message_text(
@@ -143,7 +148,8 @@ def message_edited(storage: Storage, update: Update, context: CallbackContext):
             ,reply_markup = layout
             )
     except Exception as e:
-        print(e)
+        tb = traceback.format_exc()
+        print(tb)
 
 
 @curry
@@ -165,25 +171,26 @@ def send_message(storage: Storage, bot, chat_id: int) -> None:
     if new_message or not has_editable:
         # There recently was a user message, or there is no bot's pinned
         # message to edit. We need to send a new one
-        sent_msg = bot.send_message(chat_id, text=text
-                                   ,parse_mode="HTML"
-                                   ,reply_markup=layout)
-        sent_id = sent_msg.message_id
+        try:
+            sent_msg = bot.send_message(chat_id, text=text
+                                       ,parse_mode="HTML"
+                                       ,reply_markup=layout)
+            sent_id = sent_msg.message_id
 
-        # remember the message for future edits
-        if has_editable:
-            old_msg = storage.get_message_id(chat_id)
+            # remember the message for future edits
+            if has_editable:
+                old_msg = storage.get_message_id(chat_id)
 
-        # remember the message for future edits
-        storage.set_message_id(chat_id, sent_id)
-        bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
+            # remember the message for future edits
+            storage.set_message_id(chat_id, sent_id)
+            bot.pin_chat_message(chat_id, sent_id, disable_notification=True)
 
-        # delete old pin message
-        if has_editable:
-            try:
+            # delete old pin message
+            if has_editable:
                 bot.delete_message(chat_id, old_msg)
-            except Exception as e:
-                print(e)
+        except Exception as e:
+            tb = traceback.format_exc()
+            print(tb)
     else:
         msg_id = storage.get_message_id(chat_id)
         bot.edit_message_text(
@@ -219,16 +226,21 @@ def pin_from_self(storage, update) -> bool:
     return False
 
 def allowed_to_pin(bot, chat_id: int, user: User) -> bool:
-    chat = bot.get_chat(chat_id)
-    everyone_pins = chat.permissions.can_pin_messages
-    member = bot.get_chat_member(chat_id, user.id)
-    user_pins = member.can_pin_messages
+    try:
+        chat = bot.get_chat(chat_id)
+        everyone_pins = chat.permissions.can_pin_messages
+        member = bot.get_chat_member(chat_id, user.id)
+        user_pins = member.can_pin_messages
 
-    if everyone_pins and user_pins != False:
-        return True
-    if not everyone_pins and user_pins == True:
-        return True
-    # creator doesn't have normal permission fields
-    if member.status == "creator":
-        return True
-    return False
+        if everyone_pins and user_pins != False:
+            return True
+        if not everyone_pins and user_pins == True:
+            return True
+        # creator doesn't have normal permission fields
+        if member.status == "creator":
+            return True
+        return False
+    except Exception as e:
+        tb = traceback.format_exc()
+        print(tb)
+        return False
