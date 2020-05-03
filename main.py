@@ -24,7 +24,7 @@ def main(token: str) -> None:
     dp = updater.dispatcher
 
     storage: Union[Storage, LocalStorage] = Storage()
-    if len(sys.argv) > 1 and sys.argv[1] == "local":
+    if "local" in sys.argv:
         storage = LocalStorage()
         print("Running with local storage")
 
