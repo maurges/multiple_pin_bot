@@ -10,9 +10,8 @@ from enum import Enum
 from control import parse_unpin_data
 from control import UnpinAll, KeepLast, ButtonsExpand, ButtonsCollapse
 from message_info import MessageInfo
-from view import ButtonsStatus
+from view_post import ButtonsStatus, EmptyPost, pins_post
 from varlock import VarLock
-import view
 
 """
 Author: d86leader@mail.com, 2019
@@ -106,7 +105,7 @@ def button_pressed(storage: Storage, update: Update, context: CallbackContext):
             response_buttons = ButtonsStatus.Expanded
 
         text, layout = gen_post(storage, chat_id, response_buttons)
-        if (text, layout) == view.EmptyPost:
+        if (text, layout) == EmptyPost:
             bot.unpin_chat_message(chat_id, msg_id)
             bot.delete_message(chat_id, msg_id)
             storage.remove_message_id(chat_id)
@@ -201,10 +200,10 @@ def gen_post(storage, chat_id: int
             ,button_status: ButtonsStatus = ButtonsStatus.Collapsed
             ) -> Tuple[str, InlineKeyboardMarkup]:
     if not storage.has(chat_id):
-        return view.EmptyPost
+        return EmptyPost
     else:
         pins = storage.get(chat_id)
-        return view.pins_post(pins, chat_id, button_status)
+        return pins_post(pins, chat_id, button_status)
 
 
 def pin_from_self(storage, update) -> bool:
